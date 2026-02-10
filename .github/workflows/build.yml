@@ -77,6 +77,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_BUNDLE_SKIP_SIGNING: true
 
+      - name: Strip debug symbols (Linux only)
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          # Strip debug symbols from the binary to reduce size
+          if [ -f src-tauri/target/release/nanoboard ]; then
+            strip --strip-all src-tauri/target/release/nanoboard
+            echo "Stripped nanoboard binary"
+          fi
+          # Also strip in bundle directory
+          find src-tauri/target/release/bundle -type f -executable -exec strip --strip-all {} \; 2>/dev/null || true
+
       - name: Upload artifacts (Linux/Windows)
         if: matrix.platform.os != 'macos-latest'
         uses: actions/upload-artifact@v4
