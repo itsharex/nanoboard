@@ -471,9 +471,9 @@ export default function ConfigEditor() {
         // 将 allowFrom 字符串转换为列表
         if (cleanedChannel.allowFrom !== undefined) {
           if (typeof cleanedChannel.allowFrom === 'string') {
-            // 如果是空字符串或只有空白字符，设置为 [""]
+            // 如果是空字符串或只有空白字符，设置为空数组（允许所有人）
             if (cleanedChannel.allowFrom.trim() === '') {
-              cleanedChannel.allowFrom = [''];
+              cleanedChannel.allowFrom = [];
             } else {
               // 否则按逗号分割成数组，并去除空白字符
               cleanedChannel.allowFrom = cleanedChannel.allowFrom
@@ -481,8 +481,10 @@ export default function ConfigEditor() {
                 .map((s: string) => s.trim())
                 .filter((s: string) => s.length > 0);
             }
+          } else if (Array.isArray(cleanedChannel.allowFrom)) {
+            // 如果是数组，过滤掉空字符串
+            cleanedChannel.allowFrom = cleanedChannel.allowFrom.filter((s: string) => s.trim().length > 0);
           }
-          // 如果已经是数组，保持不变
         }
 
         cleaned.channels[key] = cleanedChannel;
@@ -1482,7 +1484,17 @@ export default function ConfigEditor() {
             <div className="space-y-4">
               {editingChannel.channelInfo.fields.map((field) => {
                 const currentValue = (config.channels?.[editingChannel.channelKey] as any)?.[field.name];
-                const fieldValue = currentValue !== undefined ? currentValue : (field.default ?? "");
+                // 处理 allowFrom 字段：如果是数组，转换为逗号分隔的字符串
+                let fieldValue = currentValue !== undefined ? currentValue : (field.default ?? "");
+                if (field.name === 'allowFrom' && Array.isArray(fieldValue)) {
+                  // 如果数组为空或只包含空字符串，显示为空（表示允许所有人）
+                  if (fieldValue.length === 0 || (fieldValue.length === 1 && fieldValue[0] === '')) {
+                    fieldValue = '';
+                  } else {
+                    // 否则转换为逗号分隔的字符串
+                    fieldValue = fieldValue.join(', ');
+                  }
+                }
 
                 return (
                   <div key={field.name}>
