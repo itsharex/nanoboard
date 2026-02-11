@@ -103,8 +103,6 @@ jobs:
           fi
           # Also strip in bundle directory
           find src-tauri/target/release/bundle -type f -executable -exec strip --strip-all {} \; 2>/dev/null || true
-          # Remove unnecessary files to reduce artifact size
-          rm -rf src-tauri/target/release/bundle/deb/*.deb src-tauri/target/release/bundle/appimage/*.AppImage 2>/dev/null || true
 
       - name: Upload artifacts (Linux/Windows/macOS x86_64)
         if: matrix.platform.target != 'aarch64-apple-darwin'
