@@ -511,11 +511,19 @@ export default function Dashboard() {
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                      <Download className="w-5 h-5 text-blue-600" />
+                      {loading ? (
+                        <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+                      ) : (
+                        <Download className="w-5 h-5 text-blue-600" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">下载 nanobot</p>
-                      <p className="text-xs text-gray-500 mt-1">通过 pip 安装最新版本</p>
+                      <p className="font-medium text-gray-900">
+                        {loading ? "正在下载..." : "下载 nanobot"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {loading ? "请稍候，正在安装 nanobot..." : "通过 pip 安装最新版本"}
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -533,11 +541,19 @@ export default function Dashboard() {
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                      <Rocket className="w-5 h-5 text-indigo-600" />
+                      {loading ? (
+                        <RefreshCw className="w-5 h-5 text-indigo-600 animate-spin" />
+                      ) : (
+                        <Rocket className="w-5 h-5 text-indigo-600" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">初始化配置</p>
-                      <p className="text-xs text-gray-500 mt-1">下载后运行，创建配置文件</p>
+                      <p className="font-medium text-gray-900">
+                        {loading ? "正在初始化..." : "初始化配置"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {loading ? "请稍候，正在创建配置文件..." : "下载后运行，创建配置文件"}
+                      </p>
                     </div>
                   </div>
                 </button>
