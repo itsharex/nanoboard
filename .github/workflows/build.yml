@@ -96,7 +96,7 @@ jobs:
       - name: Strip debug symbols (Linux only)
         if: matrix.platform.os == 'ubuntu-latest'
         run: |
-          # Strip debug symbols from the binary to reduce size
+          # Strip debug symbols from binary to reduce size
           if [ -f src-tauri/target/release/nanoboard ]; then
             strip --strip-all src-tauri/target/release/nanoboard
             echo "Stripped nanoboard binary"
@@ -125,65 +125,3 @@ jobs:
           name: nanoboard-${{ matrix.platform.target }}
           path: src-tauri/target/aarch64-apple-darwin/release/bundle/*
           if-no-files-found: warn
-
-  release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: List all files in artifacts
-        run: |
-          echo "=== All files in artifacts ==="
-          find artifacts -type f -exec ls -lh {} \;
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: true
-          prerelease: false
-          files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.exe
-            artifacts/**/*.msi
-          fail_on_unmatched_files: true
-          body: |
-            # nanoboard ${{ github.ref_name }}
-
-            ## Downloads
-
-            | Platform | Download |
-            |----------|----------|
-            | macOS (Apple Silicon) | nanoboard-aarch64-apple-darwin |
-            | macOS (Intel) | nanoboard-x86_64-apple-darwin |
-            | Linux | nanoboard-x86_64-unknown-linux-gnu |
-            | Windows | nanoboard-x86_64-pc-windows-msvc |
-
-            ## Installation
-
-            ### macOS
-            ```bash
-            chmod +x nanoboard
-            ./nanoboard
-            ```
-
-            ### Linux
-            ```bash
-            chmod +x nanoboard
-            ./nanoboard
-            ```
-
-            ### Windows
-            Double-click `nanoboard.exe`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
