@@ -10,7 +10,32 @@ use std::time::Instant;
 use sysinfo::System;
 use tauri::State;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 use crate::AppState;
+
+/// Windows 进程创建标志：不创建窗口
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+/// 为命令设置隐藏窗口（仅 Windows）
+/// 在其他平台上不执行任何操作
+fn apply_hidden_window(cmd: Command) -> Command {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let mut cmd = cmd;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        cmd
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        cmd
+    }
+}
 
 /// 获取用户的 shell PATH
 /// 通过加载用户的 shell 配置文件来获取完整的 PATH
@@ -217,22 +242,9 @@ fn find_command(command: &str) -> Option<String> {
         if full_path.exists() {
             log::debug!("在预设路径中找到: {}", full_path.display());
 
-            // Windows 特殊处理：如果找到的是 python/pip 命令，隐藏其命令行窗口
             #[cfg(target_os = "windows")]
             {
-                let cmd_with_python = if full_path.to_string_lossy().contains("python")
-                    || full_path.to_string_lossy().contains("pip") {
-                    format!("windows_hide \"{}\" {}", command, full_path.display())
-                } else {
-                    full_path.to_string_lossy()
-                };
-
-                std::process::Command::new("cmd")
-                    .arg("/c")
-                    .arg(cmd_with_python)
-                    .output()
-                    .ok()
-                    .map(|_| ())
+                return Some(full_path.to_string_lossy().to_string());
             }
 
             #[cfg(not(target_os = "windows"))]
@@ -583,7 +595,7 @@ pub async fn download_nanobot() -> Result<serde_json::Value, String> {
         .or_else(|| find_command("pip"))
         .unwrap_or_else(|| "pip3".to_string());
 
-    let output = Command::new(&pip_cmd)
+    let output = apply_hidden_window(Command::new(&pip_cmd))
         .args(&["install", "nanobot-ai"])
         .output()
         .context("执行pip install失败")
@@ -612,7 +624,7 @@ pub async fn onboard_nanobot() -> Result<serde_json::Value, String> {
         .unwrap();
 
     // 使用 nanobot onboard 命令初始化
-    let output = Command::new(&nanobot_cmd)
+    let output = apply_hidden_window(Command::new(&nanobot_cmd))
         .args(&["onboard"])
         .output()
         .context("执行nanobot onboard失败")
