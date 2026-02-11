@@ -104,6 +104,8 @@ pub struct ProcessManager {
     is_running: Arc<AtomicBool>,
     port: u16,
     start_time: Option<Instant>,
+    // 存储进程启动时的系统时间（秒），用于检测已运行进程的启动时间
+    process_start_timestamp: Option<i64>,
 }
 
 impl ProcessManager {
@@ -112,6 +114,7 @@ impl ProcessManager {
             is_running: Arc::new(AtomicBool::new(false)),
             port,
             start_time: None,
+            process_start_timestamp: None,
         }
     }
 
@@ -134,6 +137,10 @@ impl ProcessManager {
 
     pub fn set_start_time(&mut self, start_time: Instant) {
         self.start_time = Some(start_time);
+    }
+
+    pub fn set_process_start_timestamp(&mut self, timestamp: i64) {
+        self.process_start_timestamp = Some(timestamp);
     }
 }
 
@@ -305,10 +312,29 @@ pub async fn get_status(state: State<'_, AppState>) -> Result<serde_json::Value,
     if running {
         let mut process_guard = state.nanobot_process.lock().unwrap();
         if process_guard.is_none() {
-            // 尝试从运行的进程中获取端口信息
+            // 尝试从运行的进程中获取端口信息和启动时间
             let port = detect_nanobot_port().unwrap_or(18790);
-            let process_manager = ProcessManager::new(port);
+            let start_timestamp = get_nanobot_start_time();
+
+            let mut process_manager = ProcessManager::new(port);
             process_manager.set_running(true);
+
+            // 如果获取到了进程启动时间戳，记录下来
+            if let Some(timestamp) = start_timestamp {
+                process_manager.set_process_start_timestamp(timestamp);
+                // 设置一个估算的启动时间（当前时间减去进程已运行时间）
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs() as i64;
+                let elapsed_secs = now - timestamp;
+                // 创建一个"虚拟"的启动时间点
+                process_manager.set_start_time(Instant::now() - std::time::Duration::from_secs(elapsed_secs as u64));
+            } else {
+                // 无法获取启动时间，使用当前时间作为起点
+                process_manager.set_start_time(Instant::now());
+            }
+
             *process_guard = Some(process_manager);
         }
     } else {
@@ -378,6 +404,25 @@ fn detect_nanobot_port() -> Option<u16> {
                 }
                 // 默认端口
                 return Some(18790);
+            }
+        }
+    }
+    None
+}
+
+/// 获取nanobot进程的启动时间（Unix时间戳，秒）
+fn get_nanobot_start_time() -> Option<i64> {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    for (_pid, process) in sys.processes() {
+        let name = process.name();
+        if name.contains("python") || name.contains("nanobot") {
+            let cmd = process.cmd();
+            let cmd_str = cmd.join(" ");
+            if cmd_str.contains("nanobot") && cmd_str.contains("gateway") {
+                // 获取进程启动时间并转换为 i64
+                return Some(process.start_time() as i64);
             }
         }
     }

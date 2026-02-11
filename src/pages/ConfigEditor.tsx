@@ -21,6 +21,8 @@ import {
   RotateCcw,
   Copy,
   FolderOpen,
+  Code,
+  Save,
 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -382,8 +384,12 @@ export default function ConfigEditor() {
     providerInfo: typeof AVAILABLE_PROVIDERS[0] | null;
     activeTab: "api" | "agent";
   }>({ isOpen: false, providerId: "", providerInfo: null, activeTab: "api" });
-  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(() => {
+    return localStorage.getItem("selectedProviderId");
+  });
   const [providerAgentConfigs, setProviderAgentConfigs] = useState<Record<string, ProviderAgentConfig>>({});
+
+
   const [showHistory, setShowHistory] = useState(false);
   const [historyVersions, setHistoryVersions] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -409,6 +415,13 @@ export default function ConfigEditor() {
   }>({ isOpen: false, channelKey: "", channelInfo: null });
   const toast = useToast();
 
+  // 代码编辑器模式状态
+  const [viewMode, setViewMode] = useState<"visual" | "code">("visual");
+  const [originalConfig, setOriginalConfig] = useState<any>({});
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [savingCode, setSavingCode] = useState(false);
+
   useEffect(() => {
     loadConfig();
     loadProviderAgentConfigs();
@@ -429,6 +442,15 @@ export default function ConfigEditor() {
   useEffect(() => {
     localStorage.setItem("configEditorExpandedSections", JSON.stringify([...expandedSections]));
   }, [expandedSections]);
+
+  // 监听选中的 Provider 并保存到 localStorage
+  useEffect(() => {
+    if (selectedProviderId) {
+      localStorage.setItem("selectedProviderId", selectedProviderId);
+    } else {
+      localStorage.removeItem("selectedProviderId");
+    }
+  }, [selectedProviderId]);
 
   async function loadConfig() {
     setLoading(true);
@@ -464,6 +486,51 @@ export default function ConfigEditor() {
       localStorage.setItem(PROVIDER_AGENT_CONFIGS_KEY, JSON.stringify(providerAgentConfigs));
     } catch (error) {
       console.error("保存 Provider Agent 配置失败:", error);
+    }
+  }
+
+  // 代码编辑器相关函数
+  async function saveCodeConfig() {
+    setSavingCode(true);
+    try {
+      const parsed = JSON.parse(code);
+      setCodeError(null);
+
+      const validation = await configApi.validate(parsed);
+      if (!validation.valid && validation.errors.length > 0) {
+        toast.showError(`配置验证失败: ${validation.errors.join(", ")}`);
+        return;
+      }
+
+      await configApi.save(parsed);
+      setOriginalConfig(parsed);
+      setConfig(parsed as Config);
+      toast.showSuccess("配置已保存");
+    } catch (error) {
+      if (typeof error === "object" && error !== null && "message" in error) {
+        const jsonError = error as { message: string };
+        if (jsonError.message.includes("JSON")) {
+          setCodeError(`JSON 语法错误: ${jsonError.message}`);
+          toast.showError("JSON 语法错误");
+          return;
+        }
+      }
+      toast.showError("保存配置失败");
+    } finally {
+      setSavingCode(false);
+    }
+  }
+
+  function formatCode() {
+    try {
+      const parsed = JSON.parse(code);
+      const formatted = JSON.stringify(parsed, null, 2);
+      setCode(formatted);
+      setCodeError(null);
+      toast.showSuccess("代码已格式化");
+    } catch (error) {
+      setCodeError("无法格式化：JSON 语法错误");
+      toast.showError("无法格式化：JSON 语法错误");
     }
   }
 
@@ -816,13 +883,35 @@ export default function ConfigEditor() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin">
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* 页面头部 */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">配置编辑</h1>
+            <h1 className="text-xl font-semibold text-gray-900">编辑配置</h1>
             <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  if (viewMode === "visual") {
+                    // 切换到代码模式，加载当前配置
+                    setOriginalConfig(config);
+                    setCode(JSON.stringify(config, null, 2));
+                    setCodeError(null);
+                    setViewMode("code");
+                  } else {
+                    // 切换回可视模式
+                    setViewMode("visual");
+                  }
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
+                  viewMode === "code"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                <Code className="w-4 h-4" />
+                代码配置
+              </button>
               <button
                 onClick={() => {
                   setConfirmDialog({
@@ -834,6 +923,8 @@ export default function ConfigEditor() {
                         // 恢复到默认配置并直接保存到文件
                         await configApi.save(DEFAULT_CONFIG);
                         setConfig(DEFAULT_CONFIG);
+                        setOriginalConfig(DEFAULT_CONFIG);
+                        setCode(JSON.stringify(DEFAULT_CONFIG, null, 2));
                         toast.showSuccess("已恢复默认配置");
                       } catch (error) {
                         toast.showError("恢复默认配置失败");
@@ -844,7 +935,7 @@ export default function ConfigEditor() {
                   });
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-amber-100 hover:bg-amber-200 rounded-lg font-medium text-amber-700 transition-colors text-sm"
-                >
+              >
                 <RotateCcw className="w-4 h-4" />
                 恢复默认
               </button>
@@ -865,11 +956,13 @@ export default function ConfigEditor() {
         </div>
       </div>
 
-      {/* 主内容区域 */}
-      <div className="p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+      {/* 主内容区域 - 带滚动条 */}
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+        {viewMode === "visual" ? (
+          <div className="p-8">
+            <div className="max-w-6xl mx-auto space-y-6">
 
-        {/* 历史记录模态框 */}
+            {/* 历史记录模态框 */}
         {showHistory && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
@@ -1055,14 +1148,14 @@ export default function ConfigEditor() {
                   {AVAILABLE_PROVIDERS.map((provider) => {
                     const providerConfig = config.providers?.[provider.id];
                     const isConfigured = providerConfig && providerConfig.apiKey && providerConfig.apiKey.trim() !== "";
-                    const isSelected = selectedProviderId === provider.id;
+                    const isCurrentProvider = selectedProviderId === provider.id;
 
                     return (
                       <div
                         key={provider.id}
                         className={`group rounded-lg border transition-all hover:shadow-md ${
-                          isSelected
-                            ? "bg-green-50 border-green-200"
+                          isCurrentProvider
+                            ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200"
                             : isConfigured
                             ? "bg-yellow-50 border-yellow-200"
                             : "bg-white border-gray-200 hover:border-gray-300"
@@ -1085,12 +1178,12 @@ export default function ConfigEditor() {
                                   <h3 className="font-semibold text-gray-900 text-sm">
                                     {provider.name}
                                   </h3>
-                                  {isSelected && (
-                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                                      已选择
+                                  {isCurrentProvider && (
+                                    <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full font-medium">
+                                      当前使用
                                     </span>
                                   )}
-                                  {!isSelected && isConfigured && (
+                                  {!isCurrentProvider && isConfigured && (
                                     <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
                                       已配置
                                     </span>
@@ -1317,7 +1410,7 @@ export default function ConfigEditor() {
                                   )}
                                 </div>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                  {channel.description} · 难度: {channel.difficulty}
+                                  {channel.description}
                                 </p>
                               </div>
                             </div>
@@ -1356,7 +1449,76 @@ export default function ConfigEditor() {
           )}
         </div>
 
+          </div>
         </div>
+      ) : (
+        /* 代码编辑器视图 */
+        <div className="flex-1 overflow-hidden">
+          <div className="p-6">
+            <div className="max-w-6xl mx-auto">
+              {/* 代码编辑器工具栏 */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  {code !== JSON.stringify(originalConfig, null, 2) && (
+                    <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 text-sm font-medium">
+                      <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                      <span>未保存</span>
+                    </div>
+                  )}
+                  {codeError && (
+                    <div className="flex items-center gap-1.5 text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 text-sm font-medium">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      <span>{codeError}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={formatCode}
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700 transition-colors text-sm"
+                  >
+                    <Code className="w-4 h-4" />
+                    格式化
+                  </button>
+                  <button
+                    onClick={saveCodeConfig}
+                    disabled={savingCode || code === JSON.stringify(originalConfig, null, 2) || !!codeError}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg font-medium text-white transition-colors text-sm"
+                  >
+                    <Save className="w-4 h-4" />
+                    {savingCode ? "保存中..." : "保存配置"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 代码编辑器 */}
+              <textarea
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  try {
+                    JSON.parse(e.target.value);
+                    setCodeError(null);
+                  } catch (error) {
+                    if (typeof error === "object" && error !== null && "message" in error) {
+                      setCodeError(`JSON 语法错误: ${(error as { message: string }).message}`);
+                    } else {
+                      setCodeError("JSON 语法错误");
+                    }
+                  }
+                }}
+                className={`w-full h-[calc(100vh-200px)] font-mono text-sm p-6 rounded-lg focus:outline-none resize-none ${
+                  codeError
+                    ? "bg-red-50 border-2 border-red-300 text-red-900"
+                    : "bg-gray-900 text-gray-100"
+                }`}
+                placeholder="在此编辑 JSON 配置..."
+                spellCheck={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* 确认对话框 */}

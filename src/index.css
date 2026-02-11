@@ -80,6 +80,16 @@ body {
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.25);
   }
+
+  /* 隐藏滚动条 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* 现代化的动画和过渡 */

@@ -52,20 +52,29 @@ export const sessionApi = {
     invoke<any>("save_workspace_file", { fileName, content }),
 };
 
-// Terminal API
-export const terminalApi = {
-  executeCommand: (command: string, args: string[]) =>
-    invoke<string>("execute_command", { command, args }),
-  getCurrentDir: () => invoke<string>("get_current_dir"),
-  // Interactive terminal commands
-  startSession: (sessionId: string, shell?: string) =>
-    invoke<string>("start_session", { sessionId, shell }),
-  sendInput: (sessionId: string, input: string) =>
-    invoke<void>("send_input", { sessionId, input }),
-  stopSession: (sessionId: string) =>
-    invoke<void>("stop_session", { sessionId }),
-  isSessionAlive: (sessionId: string) =>
-    invoke<boolean>("is_session_alive", { sessionId }),
+// Skill API
+export const skillApi = {
+  list: () => invoke<any>("list_skills"),
+  getContent: (skillId: string) =>
+    invoke<any>("get_skill_content", { skillId }),
+  delete: (skillId: string) =>
+    invoke<any>("delete_skill", { skillId }),
+};
+
+// File System API
+export const fsApi = {
+  getDirectoryTree: (relativePath?: string) =>
+    invoke<any>("get_directory_tree", { relativePath }),
+  getFileContent: (relativePath: string) =>
+    invoke<any>("get_file_content", { relativePath }),
+  createFolder: (relativePath: string, folderName: string) =>
+    invoke<any>("create_folder", { relativePath, folderName }),
+  deleteFolder: (relativePath: string) =>
+    invoke<any>("delete_folder", { relativePath }),
+  deleteFile: (relativePath: string) =>
+    invoke<any>("delete_file", { relativePath }),
+  renameItem: (relativePath: string, newName: string) =>
+    invoke<any>("rename_item", { relativePath, newName }),
 };
 
 // Event listeners
@@ -74,6 +83,5 @@ import { listen } from "@tauri-apps/api/event";
 export const events = {
   onLogUpdate: (callback: (data: string[]) => void) =>
     listen<string[]>("log-update", (event) => callback(event.payload)),
-  onTerminalOutput: (callback: (data: { session: string; data: string; type: string }) => void) =>
-    listen("terminal-output", (event) => callback(event.payload as any)),
 };
+

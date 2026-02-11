@@ -54,6 +54,17 @@ async fn main() {
             session::rename_session,
             session::save_session_memory,
             session::save_workspace_file,
+            // Skill commands
+            session::list_skills,
+            session::get_skill_content,
+            session::delete_skill,
+            // File system commands
+            session::get_directory_tree,
+            session::get_file_content,
+            session::create_folder,
+            session::delete_folder,
+            session::delete_file,
+            session::rename_item,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
