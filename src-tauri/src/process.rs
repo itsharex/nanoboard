@@ -583,25 +583,6 @@ pub async fn download_nanobot() -> Result<serde_json::Value, String> {
         .or_else(|| find_command("pip"))
         .unwrap_or_else(|| "pip3".to_string());
 
-    // Windows 特殊处理：如果找到的是 pip 命令，隐藏其命令行窗口
-    #[cfg(target_os = "windows")]
-    {
-        if let Some(pip_path) = pip_cmd.strip_prefix("pip").strip_suffix("3").strip_suffix(".exe") {
-            std::process::Command::new("cmd")
-                .arg("/c")
-                .arg(&format!("title {}", pip_path.display()))
-                .arg("windows_hide")
-                .arg("exit 0")
-                .output()
-                .ok()
-                .map(|_| ())
-        };
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        return Some(full_path.to_string_lossy().to_string());
-    }
     let output = Command::new(&pip_cmd)
         .args(&["install", "nanobot-ai"])
         .output()
@@ -631,25 +612,7 @@ pub async fn onboard_nanobot() -> Result<serde_json::Value, String> {
         .unwrap();
 
     // 使用 nanobot onboard 命令初始化
-    // Windows 特殊处理：如果找到的是 pip 命令，隐藏其命令行窗口
-    #[cfg(target_os = "windows")]
-    {
-        if let Some(pip_path) = pip_cmd.strip_prefix("pip").strip_suffix("3").strip_suffix(".exe") {
-            std::process::Command::new("cmd")
-                .arg("/c")
-                .arg(&format!("title {}", pip_path.display()))
-                .arg("windows_hide")
-                .arg("exit 0")
-                .output()
-                .ok()
-                .map(|_| ())
-        };
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        return Some(full_path.to_string_lossy().to_string());
-    }
+    let output = Command::new(&nanobot_cmd)
         .args(&["onboard"])
         .output()
         .context("执行nanobot onboard失败")
