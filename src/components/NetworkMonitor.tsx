@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface NetworkData {
@@ -12,6 +13,7 @@ interface NetworkMonitorProps {
 }
 
 export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
+  const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 300, height: 128 });
 
@@ -50,38 +52,43 @@ export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
     return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
   }).join(' ');
 
-  // 当前值
-  const currentUpload = displayData.length > 0 ? displayData[displayData.length - 1].upload : 0;
-  const currentDownload = displayData.length > 0 ? displayData[displayData.length - 1].download : 0;
+  // 当前值（使用最近几个数据点的平均值，避免突然的0）
+  const currentUpload = displayData.length > 0
+    ? displayData.slice(-3).reduce((sum, d) => sum + d.upload, 0) / Math.min(displayData.length, 3)
+    : 0;
+  const currentDownload = displayData.length > 0
+    ? displayData.slice(-3).reduce((sum, d) => sum + d.download, 0) / Math.min(displayData.length, 3)
+    : 0;
 
   function formatSpeed(bytes: number): string {
-    if (bytes < 1024) {
-      return `${bytes.toFixed(1)} B/s`;
-    } else if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB/s`;
+    // 如果值非常小但大于0，显示最小值而不是0
+    const displayValue = bytes > 0 && bytes < 0.1 ? 0.1 : bytes;
+
+    if (displayValue < 1024) {
+      return `${displayValue.toFixed(1)} B/s`;
+    } else if (displayValue < 1024 * 1024) {
+      return `${(displayValue / 1024).toFixed(1)} KB/s`;
     } else {
-      return `${(bytes / 1024 / 1024).toFixed(2)} MB/s`;
+      return `${(displayValue / 1024 / 1024).toFixed(2)} MB/s`;
     }
   }
 
   return (
     <div className="w-full h-full flex flex-col">
       {/* 标题和当前值 */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-cyan-600" />
-            <div className="text-xs">
-              <span className="text-gray-500">上行: </span>
-              <span className="font-medium text-gray-700">{formatSpeed(currentUpload)}</span>
-            </div>
+      <div className="flex flex-col gap-2 mb-3">
+        <div className="flex items-center gap-1.5">
+          <TrendingUp className="w-3.5 h-3.5 text-cyan-600" />
+          <div className="text-xs">
+            <span className="text-gray-500">{t("dashboard.upload")}: </span>
+            <span className="font-medium text-gray-700">{formatSpeed(currentUpload)}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="w-3.5 h-3.5 text-blue-600" />
-            <div className="text-xs">
-              <span className="text-gray-500">下行: </span>
-              <span className="font-medium text-gray-700">{formatSpeed(currentDownload)}</span>
-            </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <TrendingDown className="w-3.5 h-3.5 text-blue-600" />
+          <div className="text-xs">
+            <span className="text-gray-500">{t("dashboard.download")}: </span>
+            <span className="font-medium text-gray-700">{formatSpeed(currentDownload)}</span>
           </div>
         </div>
       </div>

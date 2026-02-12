@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { configApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
 import {
@@ -129,8 +130,7 @@ const ProviderIcon = ({ name, className }: { name: string; className?: string })
 const AVAILABLE_PROVIDERS = [
   {
     id: "openrouter",
-    name: "OpenRouter",
-    description: "推荐，可访问所有模型",
+    nameKey: "providers.openrouter",
     icon: "Network",
     colorClass: "bg-purple-50 text-purple-600",
     apiBase: "https://openrouter.ai/api/v1",
@@ -140,8 +140,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "anthropic",
-    name: "Anthropic",
-    description: "Claude 系列 AI 模型",
+    nameKey: "providers.anthropic",
     icon: "Bot",
     colorClass: "bg-orange-50 text-orange-600",
     apiBase: "https://api.anthropic.com",
@@ -151,8 +150,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "openai",
-    name: "OpenAI",
-    description: "GPT 系列 AI 模型",
+    nameKey: "providers.openai",
     icon: "Brain",
     colorClass: "bg-green-50 text-green-600",
     apiBase: "https://api.openai.com/v1",
@@ -162,8 +160,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "deepseek",
-    name: "DeepSeek",
-    description: "深度求索 AI 模型",
+    nameKey: "providers.deepseek",
     icon: "Search",
     colorClass: "bg-blue-50 text-blue-600",
     apiBase: "https://api.deepseek.com",
@@ -173,8 +170,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "groq",
-    name: "Groq",
-    description: "超快速 AI 推理 + 语音转录",
+    nameKey: "providers.groq",
     icon: "Zap",
     colorClass: "bg-red-50 text-red-600",
     apiBase: "https://api.groq.com/openai/v1",
@@ -184,8 +180,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "gemini",
-    name: "Gemini",
-    description: "Google Gemini 系列",
+    nameKey: "providers.gemini",
     icon: "Target",
     colorClass: "bg-yellow-50 text-yellow-600",
     apiBase: "https://generativelanguage.googleapis.com",
@@ -195,8 +190,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "aihubmix",
-    name: "AiHubMix",
-    description: "API 网关，访问所有模型",
+    nameKey: "providers.aihubmix",
     icon: "Server",
     colorClass: "bg-indigo-50 text-indigo-600",
     apiBase: "https://aihubmix.com",
@@ -206,8 +200,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "dashscope",
-    name: "DashScope",
-    description: "阿里云 Qwen 系列",
+    nameKey: "providers.dashscope",
     icon: "Cpu",
     colorClass: "bg-cyan-50 text-cyan-600",
     apiBase: "https://dashscope.console.aliyun.com",
@@ -217,8 +210,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "moonshot",
-    name: "Moonshot",
-    description: "Moonshot/Kimi 系列",
+    nameKey: "providers.moonshot",
     icon: "Target",
     colorClass: "bg-pink-50 text-pink-600",
     apiBase: "https://api.moonshot.cn",
@@ -228,8 +220,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "zhipu",
-    name: "Zhipu",
-    description: "智谱 GLM 系列",
+    nameKey: "providers.zhipu",
     icon: "Search",
     colorClass: "bg-teal-50 text-teal-600",
     apiBase: "https://open.bigmodel.cn/api/paas/v4",
@@ -239,8 +230,7 @@ const AVAILABLE_PROVIDERS = [
   },
   {
     id: "vllm",
-    name: "vLLM",
-    description: "本地模型（OpenAI 兼容）",
+    nameKey: "providers.vllm",
     icon: "Server",
     colorClass: "bg-gray-50 text-gray-600",
     apiBase: "http://localhost:8000/v1",
@@ -253,134 +243,115 @@ const AVAILABLE_PROVIDERS = [
 // 消息渠道配置信息
 interface ChannelField {
   name: string;
-  label: string;
+  labelKey: string;  // 使用翻译 key 而不是硬编码标签
   type: "text" | "password" | "number" | "select";
-  placeholder?: string;
+  placeholderKey?: string;  // 使用翻译 key 而不是硬编码占位符
   default?: any;
   options?: string[];
 }
 
 const CHANNELS_CONFIG: Array<{
   key: string;
-  name: string;
-  difficulty: string;
-  description: string;
+  nameKey: string;  // 使用翻译 key
   colorClass: string;
   fields: ChannelField[];
 }> = [
   {
     key: "telegram",
-    name: "Telegram",
-    difficulty: "简单",
-    description: "推荐，只需要 bot token",
+    nameKey: "channels.telegram",
     colorClass: "bg-blue-50 text-blue-600",
     fields: [
-      { name: "token", label: "Bot Token", type: "password", placeholder: "从 @BotFather 获取" },
-      { name: "allowFrom", label: "允许的用户 ID", type: "text", placeholder: "留空允许所有人，或输入用户ID，用逗号分隔" },
+      { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.telegram.tokenPlaceholder" },
+      { name: "allowFrom", labelKey: "config.channels.telegram.allowFromPlaceholder", type: "text", placeholderKey: "channels.telegram.allowFromPlaceholder" },
     ],
   },
   {
     key: "discord",
-    name: "Discord",
-    difficulty: "简单",
-    description: "需要 bot token 和 intents",
+    nameKey: "channels.discord",
     colorClass: "bg-indigo-50 text-indigo-600",
     fields: [
-      { name: "token", label: "Bot Token", type: "password", placeholder: "从 Discord Developer Portal 获取" },
-      { name: "allowFrom", label: "允许的用户 ID", type: "text", placeholder: "留空允许所有人，或输入用户ID，用逗号分隔" },
+      { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.discord.tokenPlaceholder" },
+      { name: "allowFrom", labelKey: "config.channels.discord.allowFromPlaceholder", type: "text", placeholderKey: "channels.discord.allowFromPlaceholder" },
     ],
   },
   {
     key: "whatsapp",
-    name: "WhatsApp",
-    difficulty: "中等",
-    description: "需要扫描 QR 码链接",
+    nameKey: "channels.whatsapp",
     colorClass: "bg-green-50 text-green-600",
     fields: [
-      { name: "allowFrom", label: "允许的手机号", type: "text", placeholder: "留空允许所有人，或输入手机号，用逗号分隔" },
+      { name: "allowFrom", labelKey: "config.channels.whatsapp.allowFromPlaceholder", type: "text", placeholderKey: "channels.whatsapp.allowFromPlaceholder" },
     ],
   },
   {
     key: "feishu",
-    name: "飞书",
-    difficulty: "中等",
-    description: "需要应用凭证",
+    nameKey: "channels.feishu",
     colorClass: "bg-cyan-50 text-cyan-600",
     fields: [
-      { name: "appId", label: "App ID", type: "text", placeholder: "cli_xxx" },
-      { name: "appSecret", label: "App Secret", type: "password", placeholder: "从飞书开放平台获取" },
-      { name: "encryptKey", label: "Encrypt Key (可选)", type: "text", placeholder: "长连接模式可留空" },
-      { name: "verificationToken", label: "Verification Token (可选)", type: "text", placeholder: "长连接模式可留空" },
-      { name: "allowFrom", label: "允许的用户 ID", type: "text", placeholder: "留空允许所有人，或输入 ou_xxx，用逗号分隔" },
+      { name: "appId", labelKey: "config.apiKey", type: "text", placeholderKey: "channels.feishu.appIdPlaceholder" },
+      { name: "appSecret", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.feishu.appSecretPlaceholder" },
+      { name: "encryptKey", labelKey: "channels.feishu.encryptKeyLabel", type: "text", placeholderKey: "channels.feishu.encryptKeyPlaceholder" },
+      { name: "verificationToken", labelKey: "channels.feishu.verificationTokenLabel", type: "text", placeholderKey: "channels.feishu.verificationTokenPlaceholder" },
+      { name: "allowFrom", labelKey: "config.channels.feishu.allowFromPlaceholder", type: "text", placeholderKey: "channels.feishu.allowFromPlaceholder" },
     ],
   },
   {
     key: "dingtalk",
-    name: "钉钉",
-    difficulty: "中等",
-    description: "需要应用凭证",
+    nameKey: "channels.dingtalk",
     colorClass: "bg-red-50 text-red-600",
     fields: [
-      { name: "clientId", label: "App Key (Client ID)", type: "text", placeholder: "从钉钉开放平台获取" },
-      { name: "clientSecret", label: "App Secret (Client Secret)", type: "password", placeholder: "从钉钉开放平台获取" },
-      { name: "allowFrom", label: "允许的员工 ID", type: "text", placeholder: "留空允许所有人，或输入 staffId，用逗号分隔" },
+      { name: "clientId", labelKey: "channels.dingtalk.clientIdLabel", type: "text", placeholderKey: "channels.dingtalk.clientIdPlaceholder" },
+      { name: "clientSecret", labelKey: "channels.dingtalk.clientSecretLabel", type: "password", placeholderKey: "channels.dingtalk.clientSecretPlaceholder" },
+      { name: "allowFrom", labelKey: "config.channels.dingtalk.allowFromPlaceholder", type: "text", placeholderKey: "channels.dingtalk.allowFromPlaceholder" },
     ],
   },
   {
     key: "slack",
-    name: "Slack",
-    difficulty: "中等",
-    description: "需要 bot 和 app tokens",
+    nameKey: "channels.slack",
     colorClass: "bg-purple-50 text-purple-600",
     fields: [
-      { name: "botToken", label: "Bot Token", type: "password", placeholder: "xoxb-..." },
-      { name: "appToken", label: "App-Level Token", type: "password", placeholder: "xapp-..." },
-      { name: "groupPolicy", label: "群组策略", type: "select", options: ["mention", "open", "allowlist"], default: "mention" },
-      { name: "allowFrom", label: "允许的频道 ID (仅 allowlist 模式)", type: "text", placeholder: "输入频道 ID，用逗号分隔" },
+      { name: "botToken", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.slack.botTokenPlaceholder" },
+      { name: "appToken", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.slack.appTokenPlaceholder" },
+      { name: "groupPolicy", labelKey: "channels.slack.groupPolicyLabel", type: "select", options: ["mention", "open", "allowlist"], default: "mention" },
+      { name: "allowFrom", labelKey: "channels.slack.allowFromLabel", type: "text", placeholderKey: "channels.slack.allowFromPlaceholder" },
     ],
   },
   {
     key: "qq",
-    name: "QQ",
-    difficulty: "简单",
-    description: "QQ 私聊",
+    nameKey: "channels.qq",
     colorClass: "bg-orange-50 text-orange-600",
     fields: [
-      { name: "appId", label: "App ID", type: "text", placeholder: "从 QQ 开放平台获取" },
-      { name: "secret", label: "App Secret", type: "password", placeholder: "从 QQ 开放平台获取" },
-      { name: "allowFrom", label: "允许的用户 openid", type: "text", placeholder: "留空允许所有人，或输入用户 openid，用逗号分隔" },
+      { name: "appId", labelKey: "config.apiKey", type: "text", placeholderKey: "channels.qq.appIdPlaceholder" },
+      { name: "secret", labelKey: "channels.qq.secretLabel", type: "password", placeholderKey: "channels.qq.secretPlaceholder" },
+      { name: "allowFrom", labelKey: "config.channels.qq.allowFromPlaceholder", type: "text", placeholderKey: "channels.qq.allowFromPlaceholder" },
     ],
   },
   {
     key: "email",
-    name: "邮件",
-    difficulty: "中等",
-    description: "需要 IMAP/SMTP 凭证",
+    nameKey: "channels.email",
     colorClass: "bg-yellow-50 text-yellow-600",
     fields: [
-      { name: "imapHost", label: "IMAP 服务器", type: "text", placeholder: "imap.gmail.com" },
-      { name: "imapPort", label: "IMAP 端口", type: "number", default: 993 },
-      { name: "imapUsername", label: "IMAP 用户名", type: "text", placeholder: "your-email@gmail.com" },
-      { name: "imapPassword", label: "IMAP 密码", type: "password", placeholder: "应用专用密码" },
-      { name: "smtpHost", label: "SMTP 服务器", type: "text", placeholder: "smtp.gmail.com" },
-      { name: "smtpPort", label: "SMTP 端口", type: "number", default: 587 },
-      { name: "smtpUsername", label: "SMTP 用户名", type: "text", placeholder: "your-email@gmail.com" },
-      { name: "smtpPassword", label: "SMTP 密码", type: "password", placeholder: "应用专用密码" },
-      { name: "fromAddress", label: "发件人地址", type: "text", placeholder: "your-email@gmail.com" },
-      { name: "allowFrom", label: "允许的发件人", type: "text", placeholder: "留空允许所有人，或输入邮箱，用逗号分隔" },
+      { name: "imapHost", labelKey: "channels.email.imapServerLabel", type: "text", placeholderKey: "channels.email.imapServerPlaceholder" },
+      { name: "imapPort", labelKey: "channels.email.imapPortLabel", type: "number", default: 993 },
+      { name: "imapUsername", labelKey: "channels.email.imapUsernameLabel", type: "text", placeholderKey: "channels.email.imapUsernamePlaceholder" },
+      { name: "imapPassword", labelKey: "channels.email.imapPasswordLabel", type: "password", placeholderKey: "channels.email.imapPasswordPlaceholder" },
+      { name: "smtpHost", labelKey: "channels.email.smtpServerLabel", type: "text", placeholderKey: "channels.email.smtpServerPlaceholder" },
+      { name: "smtpPort", labelKey: "channels.email.smtpPortLabel", type: "number", default: 587 },
+      { name: "smtpUsername", labelKey: "channels.email.smtpUsernameLabel", type: "text", placeholderKey: "channels.email.smtpUsernamePlaceholder" },
+      { name: "smtpPassword", labelKey: "channels.email.smtpPasswordLabel", type: "password", placeholderKey: "channels.email.smtpPasswordPlaceholder" },
+      { name: "fromAddress", labelKey: "channels.email.fromAddressLabel", type: "text", placeholderKey: "channels.email.fromAddressPlaceholder" },
+      { name: "allowFrom", labelKey: "channels.email.allowFromLabel", type: "text", placeholderKey: "channels.email.allowFromPlaceholder" },
     ],
   },
   {
     key: "terminal",
-    name: "终端",
-    difficulty: "无需配置",
-    description: "本地终端交互，建议保持开启",
+    nameKey: "channels.terminal",
     colorClass: "bg-gray-50 text-gray-600",
     fields: [],
   },
 ];
 
 export default function ConfigEditor() {
+  const { t, i18n } = useTranslation();
   const [config, setConfig] = useState<Config>({});
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -441,7 +412,7 @@ export default function ConfigEditor() {
         const parsed = JSON.parse(savedExpanded);
         setExpandedSections(new Set(parsed));
       } catch (e) {
-        console.error("加载展开状态失败:", e);
+        console.error(t("config.loadExpandStateFailed"), e);
       }
     }
   }, []);
@@ -471,7 +442,7 @@ export default function ConfigEditor() {
         setConfig(result as Config);
         }
     } catch (error) {
-      toast.showError("加载配置失败");
+      toast.showError(t("config.loadConfigFailed"));
     } finally {
       setLoading(false);
     }
@@ -485,7 +456,7 @@ export default function ConfigEditor() {
         setProviderAgentConfigs(parsed);
       }
     } catch (error) {
-      console.error("加载 Provider Agent 配置失败:", error);
+      console.error(t("config.loadProviderAgentConfigFailed"), error);
     }
   }
 
@@ -493,7 +464,7 @@ export default function ConfigEditor() {
     try {
       localStorage.setItem(PROVIDER_AGENT_CONFIGS_KEY, JSON.stringify(providerAgentConfigs));
     } catch (error) {
-      console.error("保存 Provider Agent 配置失败:", error);
+      console.error(t("config.saveProviderAgentConfigFailed"), error);
     }
   }
 
@@ -506,24 +477,24 @@ export default function ConfigEditor() {
 
       const validation = await configApi.validate(parsed);
       if (!validation.valid && validation.errors.length > 0) {
-        toast.showError(`配置验证失败: ${validation.errors.join(", ")}`);
+        toast.showError(`${t("config.validationFailed")}: ${validation.errors.join(", ")}`);
         return;
       }
 
       await configApi.save(parsed);
       setOriginalConfig(parsed);
       setConfig(parsed as Config);
-      toast.showSuccess("配置已保存");
+      toast.showSuccess(t("config.saveSuccess"));
     } catch (error) {
       if (typeof error === "object" && error !== null && "message" in error) {
         const jsonError = error as { message: string };
         if (jsonError.message.includes("JSON")) {
-          setCodeError(`JSON 语法错误: ${jsonError.message}`);
-          toast.showError("JSON 语法错误");
+          setCodeError(`${t("config.jsonSyntaxError")}: ${jsonError.message}`);
+          toast.showError(t("config.jsonSyntaxError"));
           return;
         }
       }
-      toast.showError("保存配置失败");
+      toast.showError(t("config.saveFailed"));
     } finally {
       setSavingCode(false);
     }
@@ -535,10 +506,10 @@ export default function ConfigEditor() {
       const formatted = JSON.stringify(parsed, null, 2);
       setCode(formatted);
       setCodeError(null);
-      toast.showSuccess("代码已格式化");
+      toast.showSuccess(t("logs.codeFormatted"));
     } catch (error) {
-      setCodeError("无法格式化：JSON 语法错误");
-      toast.showError("无法格式化：JSON 语法错误");
+      setCodeError(`${t("config.formatFailed")}: ${t("config.jsonSyntaxError")}`);
+      toast.showError(`${t("config.formatFailed")}: ${t("config.jsonSyntaxError")}`);
     }
   }
 
@@ -562,7 +533,7 @@ export default function ConfigEditor() {
   async function applyProviderAgentConfig(providerId: string) {
     const agentConfig = getProviderAgentConfig(providerId);
     if (Object.keys(agentConfig).length === 0) {
-      toast.showInfo("该提供商没有保存的 Agent 配置");
+      toast.showInfo(t("config.noProviderAgentConfig"));
       return;
     }
 
@@ -579,15 +550,15 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
     setSelectedProviderId(providerId); // 标记为已选择
-    const providerName = AVAILABLE_PROVIDERS.find(p => p.id === providerId)?.name || providerId;
-    toast.showSuccess(`已应用 ${providerName} 的 Agent 配置`);
+    const providerName = AVAILABLE_PROVIDERS.find(p => p.id === providerId)?.id || providerId;
+    toast.showSuccess(t("config.applyProviderConfig", { name: providerName }));
 
     // 自动保存
     try {
       const configToSave = cleanConfigForSave(updatedConfig);
       await configApi.save(configToSave);
     } catch (error) {
-      toast.showError("自动保存配置失败");
+      toast.showError(t("config.autoSaveFailed"));
     }
   }
 
@@ -677,7 +648,7 @@ export default function ConfigEditor() {
       const configToSave = cleanConfigForSave(updatedConfig);
       await configApi.save(configToSave);
     } catch (error) {
-      toast.showError("自动保存配置失败");
+      toast.showError(t("config.autoSaveFailed"));
     }
   }
 
@@ -718,7 +689,7 @@ export default function ConfigEditor() {
       const configToSave = cleanConfigForSave(updatedConfig);
       await configApi.save(configToSave);
     } catch (error) {
-      toast.showError("自动保存配置失败");
+      toast.showError(t("config.autoSaveFailed"));
     }
   }
 
@@ -741,7 +712,7 @@ export default function ConfigEditor() {
       const configToSave = cleanConfigForSave(updatedConfig);
       await configApi.save(configToSave);
     } catch (error) {
-      toast.showError("自动保存配置失败");
+      toast.showError(t("config.autoSaveFailed"));
     }
   }
 
@@ -751,7 +722,7 @@ export default function ConfigEditor() {
       const versions = await configApi.getHistory();
       setHistoryVersions(versions);
     } catch (error) {
-      toast.showError("加载历史记录失败");
+      toast.showError(t("config.loadHistoryFailed"));
     } finally {
       setLoadingHistory(false);
     }
@@ -770,16 +741,16 @@ export default function ConfigEditor() {
   function restoreVersion(version: any) {
     setConfirmDialog({
       isOpen: true,
-      title: "确认恢复",
-      message: `确定要恢复到 ${formatTimestamp(version.timestamp)} 的版本吗？当前配置将被覆盖。`,
+      title: t("config.confirmRestore"),
+      message: t("config.confirmRestoreMsg", { time: formatTimestamp(version.timestamp) }),
       onConfirm: async () => {
         try {
           await configApi.restoreVersion(version.filename);
           await loadConfig();
           await loadHistory();
-          toast.showSuccess("配置已恢复");
+          toast.showSuccess(t("config.versionRestored"));
         } catch (error) {
-          toast.showError("恢复配置失败");
+          toast.showError(t("config.restoreVersionFailed"));
         } finally {
           setConfirmDialog({ isOpen: false, title: "", message: "", onConfirm: () => {} });
         }
@@ -791,13 +762,13 @@ export default function ConfigEditor() {
     try {
       await configApi.deleteVersion(version.filename);
       await loadHistory();
-      toast.showSuccess("历史版本已删除");
+      toast.showSuccess(t("config.versionDeleted"));
     } catch (error) {
-      toast.showError("删除历史版本失败");
+      toast.showError(t("config.deleteVersionFailed"));
     }
   }
 
-  // 打开历史记录面板时加载历史
+  // 打开{t("config.history")}面板时加载历史
   useEffect(() => {
     if (showHistory) {
       loadHistory();
@@ -819,7 +790,7 @@ export default function ConfigEditor() {
         setTemplates(parsed);
       }
     } catch (error) {
-      console.error("加载模板失败:", error);
+      console.error(t("config.loadTemplateFailed"), error);
     }
   }
 
@@ -827,7 +798,7 @@ export default function ConfigEditor() {
     try {
       localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
     } catch (error) {
-      console.error("保存模板失败:", error);
+      console.error(t("config.saveTemplateFailed"), error);
     }
   }
 
@@ -842,20 +813,20 @@ export default function ConfigEditor() {
 
   function applyTemplate(template: ConfigTemplate) {
     setConfig(template.config);
-    toast.showSuccess(`已加载模板 "${template.name}"`);
+    toast.showSuccess(t("config.templateLoaded", { name: template.name }));
     setShowTemplates(false);
   }
 
   function deleteTemplate(template: ConfigTemplate) {
     setConfirmDialog({
       isOpen: true,
-      title: "确认删除",
-      message: `确定要删除模板 "${template.name}" 吗？`,
+      title: t("config.confirmDeleteTemplate"),
+      message: t("config.confirmDeleteTemplateMsg", { name: template.name }),
       onConfirm: () => {
         const updated = templates.filter((t) => t.id !== template.id);
         setTemplates(updated);
         saveTemplates();
-        toast.showSuccess("模板已删除");
+        toast.showSuccess(t("config.templateDeleted"));
         setConfirmDialog({ isOpen: false, title: "", message: "", onConfirm: () => {} });
       },
     });
@@ -863,7 +834,7 @@ export default function ConfigEditor() {
 
   function confirmSaveTemplate() {
     if (!templateDialog.name.trim()) {
-      toast.showError("请输入模板名称");
+      toast.showError(t("config.enterTemplateName"));
       return;
     }
 
@@ -878,14 +849,14 @@ export default function ConfigEditor() {
     const updated = [...templates, newTemplate];
     setTemplates(updated);
     saveTemplates();
-    toast.showSuccess("模板已保存");
+    toast.showSuccess(t("config.templateSaved"));
     setTemplateDialog({ isOpen: false, mode: "save", name: "", description: "" });
   }
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">{t("config.loading")}</div>
       </div>
     );
   }
@@ -896,7 +867,7 @@ export default function ConfigEditor() {
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">编辑配置</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{t("config.title")}</h1>
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -918,14 +889,14 @@ export default function ConfigEditor() {
                 }`}
               >
                 <Code className="w-4 h-4" />
-                代码配置
+                {t("config.codeConfig")}
               </button>
               <button
                 onClick={() => {
                   setConfirmDialog({
                     isOpen: true,
-                    title: "恢复默认配置",
-                    message: "确定要恢复到默认配置吗？这将清空所有当前配置。",
+                    title: t("config.restoreDefaultConfig"),
+                    message: t("config.restoreDefaultConfirm"),
                     onConfirm: async () => {
                       try {
                         // 恢复到默认配置并直接保存到文件
@@ -933,9 +904,9 @@ export default function ConfigEditor() {
                         setConfig(DEFAULT_CONFIG);
                         setOriginalConfig(DEFAULT_CONFIG);
                         setCode(JSON.stringify(DEFAULT_CONFIG, null, 2));
-                        toast.showSuccess("已恢复默认配置");
+                        toast.showSuccess(t("config.restoredDefault"));
                       } catch (error) {
-                        toast.showError("恢复默认配置失败");
+                        toast.showError(t("config.restoreDefaultFailed"));
                       } finally {
                         setConfirmDialog({ isOpen: false, title: "", message: "", onConfirm: () => {} });
                       }
@@ -945,7 +916,7 @@ export default function ConfigEditor() {
                 className="flex items-center gap-2 px-3 py-2 bg-amber-100 hover:bg-amber-200 rounded-lg font-medium text-amber-700 transition-colors text-sm"
               >
                 <RotateCcw className="w-4 h-4" />
-                恢复默认
+                {t("config.restoreDefault")}
               </button>
               <button
                 onClick={() => setShowHistory(!showHistory)}
@@ -954,10 +925,10 @@ export default function ConfigEditor() {
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
-                title="查看历史版本"
+                title={t("config.history")}
               >
                 <History className="w-4 h-4" />
-                历史记录
+                {t("config.history")}
               </button>
             </div>
           </div>
@@ -970,7 +941,7 @@ export default function ConfigEditor() {
           <div className="p-8">
             <div className="max-w-6xl mx-auto space-y-6">
 
-            {/* 历史记录模态框 */}
+            {/* {t("config.history")}模态框 */}
         {showHistory && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
@@ -982,7 +953,7 @@ export default function ConfigEditor() {
                       <History className="w-5 h-5 text-amber-600" />
                     </div>
                     <h2 className="text-lg font-semibold text-gray-900">
-                      配置历史记录
+                      {t("config.configHistory")}
                     </h2>
                   </div>
                   <button
@@ -1000,13 +971,13 @@ export default function ConfigEditor() {
               <div className="flex-1 overflow-y-auto p-6">
                 {loadingHistory ? (
                   <div className="flex items-center justify-center py-8 text-gray-500 text-sm">
-                    加载中...
+                    {t("config.loading")}
                   </div>
                 ) : historyVersions.length === 0 ? (
                   <EmptyState
                     icon={Inbox}
-                    title="暂无历史记录"
-                    description="保存配置时会自动创建历史备份（最多保留10份）"
+                    title={t("config.noHistory")}
+                    description={t("config.noHistoryDesc")}
                   />
                 ) : (
                   <div className="space-y-2">
@@ -1032,12 +1003,12 @@ export default function ConfigEditor() {
                               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
                             >
                               <RotateCcw className="w-4 h-4" />
-                              恢复
+                              {t("config.restore")}
                             </button>
                             <button
                               onClick={() => deleteVersion(version)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="删除此版本"
+                              title={t("config.delete")}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1061,7 +1032,7 @@ export default function ConfigEditor() {
                   <Copy className="w-5 h-5 text-purple-600" />
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  配置模板
+                  {t("config.configTemplates")}
                 </h2>
               </div>
               <button
@@ -1069,7 +1040,7 @@ export default function ConfigEditor() {
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
-                保存当前配置为模板
+                {t("config.saveAsTemplate")}
               </button>
             </div>
 
@@ -1077,8 +1048,8 @@ export default function ConfigEditor() {
               {templates.length === 0 ? (
                 <EmptyState
                   icon={FolderOpen}
-                  title="暂无配置模板"
-                  description="保存常用配置为模板，方便快速加载"
+                  title={t("config.noTemplates")}
+                  description={t("config.noTemplatesDesc")}
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1102,21 +1073,21 @@ export default function ConfigEditor() {
                           <button
                             onClick={() => applyTemplate(template)}
                             className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
-                            title="应用此模板"
+                            title={t("config.applyTemplate")}
                           >
                             <FolderOpen className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => deleteTemplate(template)}
                             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="删除模板"
+                            title={t("config.delete")}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                       <div className="text-xs text-gray-400">
-                        创建于 {new Date(template.createdAt).toLocaleString("zh-CN")}
+                        {new Date(template.createdAt).toLocaleString(i18n.language === "en" ? "en-US" : "zh-CN")}
                       </div>
                     </div>
                   ))}
@@ -1137,7 +1108,7 @@ export default function ConfigEditor() {
                 <Bot className="w-5 h-5 text-blue-600" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900">
-                LLM 提供商
+                {t("config.llmProviders")}
               </h2>
             </div>
             {expandedSections.has("providers") ? (
@@ -1151,7 +1122,7 @@ export default function ConfigEditor() {
             <div className="p-5 pt-0 space-y-4">
               {/* 可用的 Provider 列表 */}
               <div className="space-y-2">
-                <p className="text-sm text-gray-600 mb-3">选择要配置的 AI 提供商：</p>
+                <p className="text-sm text-gray-600 mb-3">{t("config.selectProvider")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {AVAILABLE_PROVIDERS.map((provider) => {
                     const providerConfig = config.providers?.[provider.id];
@@ -1184,27 +1155,24 @@ export default function ConfigEditor() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <h3 className="font-semibold text-gray-900 text-sm">
-                                    {provider.name}
+                                    {t(provider.nameKey)}
                                   </h3>
                                   {isCurrentProvider && (
                                     <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full font-medium">
-                                      当前使用
+                                      {t("config.currentUse")}
                                     </span>
                                   )}
                                   {!isCurrentProvider && isConfigured && (
                                     <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-                                      已配置
+                                      {t("config.configured")}
                                     </span>
                                   )}
                                   {!isConfigured && (
                                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                      未配置
+                                      {t("config.notConfigured")}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {provider.description}
-                                </p>
                               </div>
                             </div>
                             <button
@@ -1218,7 +1186,7 @@ export default function ConfigEditor() {
                                 });
                               }}
                               className="p-2 bg-white rounded-lg border border-gray-200 group-hover:border-blue-200 transition-colors hover:bg-blue-50"
-                              title="配置 API 和 Agent 设置"
+                              title={`${t("config.apiConfig")} & ${t("config.agentConfig")}`}
                             >
                               <Settings className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
                             </button>
@@ -1233,8 +1201,8 @@ export default function ConfigEditor() {
               {Object.keys(config.providers || {}).length === 0 && (
                 <EmptyState
                   icon={Bot}
-                  title="暂无提供商配置"
-                  description="选择上方的 AI 提供商开始配置"
+                  title={t("config.noProvidersConfigured")}
+                  description={t("config.noProvidersDesc")}
                 />
               )}
             </div>
@@ -1253,7 +1221,7 @@ export default function ConfigEditor() {
                 <Settings className="w-5 h-5 text-purple-600" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Agent配置
+                {t("config.agentConfig")}
               </h2>
             </div>
             {expandedSections.has("agents") ? (
@@ -1359,7 +1327,7 @@ export default function ConfigEditor() {
                 <MessageSquare className="w-5 h-5 text-green-600" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900">
-                消息渠道
+                {t("config.messageChannels")}
               </h2>
             </div>
             {expandedSections.has("channels") ? (
@@ -1373,7 +1341,7 @@ export default function ConfigEditor() {
             <div className="p-5 pt-0 space-y-4">
               {/* 可用的渠道列表 */}
               <div className="space-y-2">
-                <p className="text-sm text-gray-600 mb-3">选择要配置的消息渠道：</p>
+                <p className="text-sm text-gray-600 mb-3">{t("config.selectChannel")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {CHANNELS_CONFIG.map((channel) => {
                     const isEnabled = config.channels?.[channel.key]?.enabled || false;
@@ -1404,22 +1372,19 @@ export default function ConfigEditor() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <h3 className="font-semibold text-gray-900 text-sm">
-                                    {channel.name}
+                                    {t(channel.nameKey)}
                                   </h3>
                                   {isEnabled && (
                                     <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                                      已启用
+                                      {t("config.enabled")}
                                     </span>
                                   )}
                                   {!isEnabled && (
                                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                      未启用
+                                      {t("config.notEnabled")}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {channel.description}
-                                </p>
                               </div>
                             </div>
                             <button
@@ -1430,7 +1395,7 @@ export default function ConfigEditor() {
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                                 isEnabled ? "bg-blue-600" : "bg-gray-300"
                               }`}
-                              title={isEnabled ? "点击禁用" : "点击启用"}
+                              title={isEnabled ? t("config.clickToDisable") : t("config.clickToEnable")}
                             >
                               <span
                                 className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow ${
@@ -1449,8 +1414,8 @@ export default function ConfigEditor() {
               {Object.keys(config.channels || {}).length === 0 && (
                 <EmptyState
                   icon={Inbox}
-                  title="暂无渠道配置"
-                  description="点击渠道卡片开始配置"
+                  title={t("config.noChannelsConfigured")}
+                  description={t("config.clickToStartConfig")}
                 />
               )}
             </div>
@@ -1470,7 +1435,7 @@ export default function ConfigEditor() {
                   {code !== JSON.stringify(originalConfig, null, 2) && (
                     <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 text-sm font-medium">
                       <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                      <span>未保存</span>
+                      <span>{t("config.unsaved")}</span>
                     </div>
                   )}
                   {codeError && (
@@ -1486,7 +1451,7 @@ export default function ConfigEditor() {
                     className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700 transition-colors text-sm"
                   >
                     <Code className="w-4 h-4" />
-                    格式化
+                    {t("config.formatCode")}
                   </button>
                   <button
                     onClick={saveCodeConfig}
@@ -1494,7 +1459,7 @@ export default function ConfigEditor() {
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg font-medium text-white transition-colors text-sm"
                   >
                     <Save className="w-4 h-4" />
-                    {savingCode ? "保存中..." : "保存配置"}
+                    {savingCode ? t("config.saving") : t("config.saveConfig")}
                   </button>
                 </div>
               </div>
@@ -1509,9 +1474,9 @@ export default function ConfigEditor() {
                     setCodeError(null);
                   } catch (error) {
                     if (typeof error === "object" && error !== null && "message" in error) {
-                      setCodeError(`JSON 语法错误: ${(error as { message: string }).message}`);
+                      setCodeError(`${t("config.jsonSyntaxError")} ${(error as { message: string }).message}`);
                     } else {
-                      setCodeError("JSON 语法错误");
+                      setCodeError(t("config.jsonSyntaxError"));
                     }
                   }
                 }}
@@ -1520,7 +1485,7 @@ export default function ConfigEditor() {
                     ? "bg-red-50 border-2 border-red-300 text-red-900"
                     : "bg-gray-900 text-gray-100"
                 }`}
-                placeholder="在此编辑 JSON 配置..."
+                placeholder={t("config.editJsonPlaceholder")}
                 spellCheck={false}
               />
             </div>
@@ -1544,12 +1509,12 @@ export default function ConfigEditor() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {templateDialog.mode === "save" ? "保存配置模板" : "编辑模板"}
+              {templateDialog.mode === "save" ? t("config.saveTemplateTitle", { saveConfig: t("config.saveConfig") }) : t("config.editTemplate")}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
-                  模板名称
+                  {t("config.templateName")}
                 </label>
                 <input
                   type="text"
@@ -1562,19 +1527,19 @@ export default function ConfigEditor() {
                       setTemplateDialog({ isOpen: false, mode: "save", name: "", description: "" });
                     }
                   }}
-                  placeholder="例如: OpenAI 配置、开发环境配置"
+                  placeholder={t("config.forExample") + " OpenAI 配置、开发环境配置"}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                   autoFocus
                 />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
-                  描述（可选）
+                  {t("config.templateDesc")}
                 </label>
                 <textarea
                   value={templateDialog.description}
                   onChange={(e) => setTemplateDialog({ ...templateDialog, description: e.target.value })}
-                  placeholder="描述此模板的用途..."
+                  placeholder={t("config.templateDescPlaceholder")}
                   rows={3}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
                 />
@@ -1585,13 +1550,13 @@ export default function ConfigEditor() {
                 onClick={() => setTemplateDialog({ isOpen: false, mode: "save", name: "", description: "" })}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
               >
-                取消
+                {t("config.cancel")}
               </button>
               <button
                 onClick={confirmSaveTemplate}
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
               >
-                保存
+                {t("config.save")}
               </button>
             </div>
           </div>
@@ -1618,11 +1583,8 @@ export default function ConfigEditor() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    编辑 {editingProvider.providerInfo.name} 配置
+                    {t("config.editProvider", { name: t(editingProvider.providerInfo.nameKey) })}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {editingProvider.providerInfo.description}
-                  </p>
                 </div>
               </div>
 
@@ -1636,7 +1598,7 @@ export default function ConfigEditor() {
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
-                  API 配置
+                  {t("config.apiConfig")}
                 </button>
                 <button
                   onClick={() => setEditingProvider({ ...editingProvider, activeTab: "agent" })}
@@ -1646,7 +1608,7 @@ export default function ConfigEditor() {
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
-                  Agent 配置
+                  {t("config.agentConfig")}
                 </button>
               </div>
             </div>
@@ -1657,7 +1619,7 @@ export default function ConfigEditor() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      API Key
+                      {t("config.apiKey")}
                     </label>
                     <input
                       type="password"
@@ -1665,27 +1627,19 @@ export default function ConfigEditor() {
                       onChange={(e) =>
                         updateProvider(editingProvider.providerId, "apiKey", e.target.value)
                       }
-                      placeholder="sk-..."
+                      placeholder={t("config.apiKeyPlaceholder")}
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                     {editingProvider.providerInfo.apiUrl && (
                       <p className="text-xs text-gray-400 mt-1">
-                        在 <a
-                          href={editingProvider.providerInfo.apiUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline"
-                        >
-                          {editingProvider.providerInfo.apiUrl}
-                        </a>{" "}
-                        获取 API Key
+                        {t("config.getApiKeyAt", { url: editingProvider.providerInfo.apiUrl })}
                       </p>
                     )}
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      API Base URL
+                      {t("config.apiBaseUrl")}
                     </label>
                     <input
                       type="text"
@@ -1693,12 +1647,12 @@ export default function ConfigEditor() {
                       onChange={(e) =>
                         updateProvider(editingProvider.providerId, "apiBase", e.target.value)
                       }
-                      placeholder={editingProvider.providerInfo.apiBase || "https://api.example.com/v1"}
+                      placeholder={t("config.apiBaseUrlPlaceholder")}
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                     {editingProvider.providerInfo.apiBase && (
                       <p className="text-xs text-gray-400 mt-1">
-                        默认值: {editingProvider.providerInfo.apiBase}
+                        {t("config.apiBaseUrlDefault", { url: editingProvider.providerInfo.apiBase })}
                       </p>
                     )}
                   </div>
@@ -1713,7 +1667,7 @@ export default function ConfigEditor() {
                         className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        删除配置
+                        {t("config.deleteConfig")}
                       </button>
                     </div>
                   )}
@@ -1722,7 +1676,7 @@ export default function ConfigEditor() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      默认模型 (model)
+                      {t("config.model")}
                     </label>
                     <input
                       type="text"
@@ -1730,15 +1684,15 @@ export default function ConfigEditor() {
                       onChange={(e) =>
                         updateProviderAgentConfig(editingProvider.providerId, "model", e.target.value)
                       }
-                      placeholder="例如: anthropic/claude-opus-4-5"
+                      placeholder={t("config.modelPlaceholder")}
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     />
-                    <p className="text-xs text-gray-500 mt-1">agent 使用的默认 LLM 模型</p>
+                    <p className="text-xs text-gray-500 mt-1">{t("config.modelDesc")}</p>
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      最大 Token 数 (max_tokens)
+                      {t("config.maxTokens")}
                     </label>
                     <input
                       type="number"
@@ -1748,12 +1702,12 @@ export default function ConfigEditor() {
                       }
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     />
-                    <p className="text-xs text-gray-500 mt-1">单次请求的最大 token 数量</p>
+                    <p className="text-xs text-gray-500 mt-1">{t("config.maxTokensDesc")}</p>
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      最大工具迭代次数 (max_tool_iterations)
+                      {t("config.maxToolIterations")}
                     </label>
                     <input
                       type="number"
@@ -1763,12 +1717,12 @@ export default function ConfigEditor() {
                       }
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     />
-                    <p className="text-xs text-gray-500 mt-1">agent 执行工具的最大迭代次数</p>
+                    <p className="text-xs text-gray-500 mt-1">{t("config.maxToolIterationsDesc")}</p>
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      工作区路径 (workspace)
+                      {t("config.workspace")}
                     </label>
                     <input
                       type="text"
@@ -1776,14 +1730,15 @@ export default function ConfigEditor() {
                       onChange={(e) =>
                         updateProviderAgentConfig(editingProvider.providerId, "workspace", e.target.value)
                       }
+                      placeholder={t("config.workspacePlaceholder")}
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     />
-                    <p className="text-xs text-gray-500 mt-1">agent 工作区的默认路径</p>
+                    <p className="text-xs text-gray-500 mt-1">{t("config.workspaceDesc")}</p>
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">
-                      温度 (temperature) (0.0 - 2.0)
+                      {t("config.temperature")}
                     </label>
                     <input
                       type="number"
@@ -1796,7 +1751,7 @@ export default function ConfigEditor() {
                       }
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                     />
-                    <p className="text-xs text-gray-500 mt-1">控制生成文本的随机性，越高越随机</p>
+                    <p className="text-xs text-gray-500 mt-1">{t("config.temperatureDesc")}</p>
                   </div>
                 </div>
               )}
@@ -1808,7 +1763,7 @@ export default function ConfigEditor() {
                 onClick={() => setEditingProvider({ isOpen: false, providerId: "", providerInfo: null, activeTab: "api" })}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
               >
-                完成
+                {t("config.done")}
               </button>
             </div>
           </div>
@@ -1830,11 +1785,8 @@ export default function ConfigEditor() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  编辑 {editingChannel.channelInfo.name} 配置
+                  {t("config.editChannel", { name: t(editingChannel.channelInfo.nameKey) })}
                 </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {editingChannel.channelInfo.description}
-                </p>
               </div>
             </div>
 
@@ -1856,7 +1808,7 @@ export default function ConfigEditor() {
                 return (
                   <div key={field.name}>
                     <label className="block text-sm text-gray-600 mb-1">
-                      {field.label}
+                      {t(field.labelKey)}
                     </label>
                     {field.type === "select" ? (
                       <select
@@ -1879,7 +1831,7 @@ export default function ConfigEditor() {
                         onChange={(e) =>
                           updateChannelField(editingChannel.channelKey, field.name, parseInt(e.target.value))
                         }
-                        placeholder={field.placeholder}
+                        placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                     ) : (
@@ -1889,7 +1841,7 @@ export default function ConfigEditor() {
                         onChange={(e) =>
                           updateChannelField(editingChannel.channelKey, field.name, e.target.value)
                         }
-                        placeholder={field.placeholder}
+                        placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                     )}
@@ -1903,7 +1855,7 @@ export default function ConfigEditor() {
                 onClick={() => setEditingChannel({ isOpen: false, channelKey: "", channelInfo: null })}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
               >
-                完成
+                {t("config.done")}
               </button>
             </div>
           </div>

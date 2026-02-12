@@ -4,27 +4,28 @@
 
 **一个极轻量化的 nanobot 管理助手**
 
-**An Ultra-lightweight nanobot Management Assistant**
-
 [![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![React](https://img.shields.io/badge/React-18%2B-blue.svg)](https://react.dev/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131.svg)](https://tauri.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+**[English](README_en.md)** | 简体中文
+
 </div>
 
 ---
 
-## ✨ 特性
+## 特性
 
 - **可视化仪表盘** - 实时监控 Nanobot 运行状态和系统资源
 - **配置编辑** - 使用 Monaco Editor 可视化编辑配置文件
 - **快速启动** - 一键启动/停止 Nanobot Gateway
 - **日志监控** - 实时查看和过滤应用日志
 - **文件管理** - 查看、编辑和管理工作区文件
-- **轻量化** - 基于 Tauri 构建，性能优越且资源占用低
+- **多语言支持** - 支持中文和英文界面切换
+- **轻量化** - 基于 Tauri 构建，性能优越且资源占用极低
 
-## 📸 演示
+## 演示
 
 <div align="center">
 
@@ -33,22 +34,22 @@
     <td align="center">
       <img src="public/screenshots/dashboard.png" alt="仪表盘" width="400"/>
       <br/>
-      监控状态/资源/配置·快速操作
+      监控状态·系统资源
     </td>
     <td align="center">
-      <img src="public/screenshots/log-monitor.png" alt="日志监控" width="400"/>
+      <img src="public/screenshots/logs.png" alt="日志监控" width="400"/>
       <br/>
       实时查看·过滤应用日志
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/session-manager.png" alt="会话管理" width="400"/>
+      <img src="public/screenshots/file-manager.png" alt="文件管理" width="400"/>
       <br/>
       查看会话·管理文件
     </td>
     <td align="center">
-      <img src="public/screenshots/config-editor.png" alt="配置编辑器" width="400"/>
+      <img src="public/screenshots/config.png" alt="配置编辑器" width="400"/>
       <br/>
       可视化配置·快速编辑
     </td>
@@ -57,11 +58,22 @@
 
 </div>
 
-## 🚀 快速开始
+## 快速开始
 
-在 Release 页面下载最新版本的安装包，支持 Windows、macOS 和 Linux。
+在 [Release](https://github.com/Freakz3z/nanoboard/releases) 页面下载最新版本的安装包：
 
-## 🛠️ 技术栈
+### macOS
+
+- **Apple Silicon (ARM64)**: 适用于 M1/M2/M3 等 Apple 芯片 Mac
+- **Intel x64**: 适用于 Intel 芯片 Mac
+
+### Windows
+
+- 下载 `.exe` 安装程序
+
+### Linux（开发中）
+
+## 技术栈
 
 - **后端**: Rust + Tauri 2.0
 - **前端**: React 18 + TypeScript
@@ -71,28 +83,75 @@
 - **编辑器**: Monaco Editor
 - **状态管理**: React Hooks + Context API
 - **路由**: React Router v6
+- **国际化**: react-i18next
 - **文件监控**: notify (Rust)
 
-## 📁 项目结构
+## 配置
+
+nanoboard 会自动读取以下 nanobot 配置：
+
+- **配置文件**: `~/.nanobot/config.json`
+- **日志文件**: `~/.nanobot/logs/nanobot.log`
+- **工作区**: `~/.nanobot/workspace`
+
+## 构建
+
+### 环境要求
+
+- Node.js 18+
+- Rust 1.70+
+- pnpm/npm/yarn
+
+### 开发构建
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发模式（热重载）
+npm run tauri:dev
+```
+
+### 生产构建
+
+```bash
+# macOS ARM64 (Apple Silicon)
+npm run tauri:build -- --target aarch64-apple-darwin
+
+# macOS Intel x64
+npm run tauri:build -- --target x86_64-apple-darwin
+
+# Windows
+npm run tauri:build
+
+# 构建产物位于 src-tauri/target/release/bundle/
+```
+
+## 项目结构
 
 ```
 nanoboard/
 ├── src/                    # React 前端源码
 │   ├── components/         # 可复用组件
-│   │   ├── Layout.tsx         # 主布局组件
-│   │   ├── ConfirmDialog.tsx  # 确认对话框
-│   │   ├── EmptyState.tsx     # 空状态提示
-│   │   ├── Toast.tsx          # 消息提示
+│   │   ├── Layout.tsx              # 主布局组件
+│   │   ├── ConfirmDialog.tsx       # 确认对话框
+│   │   ├── EmptyState.tsx          # 空状态提示
+│   │   ├── Toast.tsx               # 消息提示
+│   │   ├── NetworkMonitor.tsx      # 网络监控图表
 │   │   └── KeyboardShortcutsHelp.tsx  # 快捷键帮助
 │   ├── pages/             # 页面组件
-│   │   ├── Dashboard.tsx      # 仪表盘
-│   │   ├── ConfigEditor.tsx   # 配置编辑器
-│   │   ├── CodeEditor.tsx     # 代码编辑器
-│   │   ├── Logs.tsx           # 日志监控
-│   │   └── Sessions.tsx       # 会话管理
+│   │   ├── Dashboard.tsx           # 仪表盘
+│   │   ├── ConfigEditor.tsx        # 配置编辑器
+│   │   ├── CodeEditor.tsx          # 代码编辑器
+│   │   ├── Logs.tsx                # 日志监控
+│   │   └── Sessions.tsx            # 会话管理
 │   ├── lib/               # 工具函数
-│   │   ├── tauri.ts           # Tauri API 封装
-│   │   └── defaultConfig.ts   # 默认配置
+│   │   ├── tauri.ts               # Tauri API 封装
+│   │   └── defaultConfig.ts       # 默认配置
+│   ├── i18n/              # 国际化配置
+│   │   └── locales/
+│   │       ├── zh-CN.json         # 简体中文
+│   │       └── en-US.json         # 英文
 │   ├── contexts/          # React Context
 │   ├── hooks/             # 自定义 Hooks
 │   ├── assets/            # 静态资源
@@ -115,134 +174,34 @@ nanoboard/
 └── README.md              # 项目文档
 ```
 
-## 🔧 配置
-
-Nanoboard 会自动读取以下 Nanobot 配置：
-
-- **配置文件**: `~/.nanobot/config.json`
-- **日志文件**: `~/.nanobot/logs/nanobot.log`
-- **工作区**: `~/.nanobot/workspace`
-- **记忆目录**: `~/.nanobot/workspace/memory`
-- **会话目录**: `~/.nanobot/workspace/sessions`
-
-## 💼 开发指南
-
-### 前置要求
-
-1. **Rust** (1.70+)
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-
-2. **Node.js** (20+)
-   ```bash
-   # 使用 nvm 安装
-   nvm install 20
-   nvm use 20
-   ```
-
-3. **系统依赖**
-
-   **macOS**:
-   ```bash
-   xcode-select --install
-   ```
-
-   **Ubuntu/Debian**:
-   ```bash
-   sudo apt update
-   sudo apt install libwebkit2gtk-4.0-dev \
-     build-essential \
-     curl \
-     wget \
-     file \
-     libxdo-dev \
-     libssl-dev \
-     libayatana-appindicator3-dev \
-     librsvg2-dev
-   ```
-
-   **Windows**:
-   - 安装 [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-   - 安装 [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
-
-### 安装
-
-1. 克隆仓库：
-   ```bash
-   git clone https://github.com/Freakz3z/nanoboard.git
-   cd nanoboard
-   ```
-
-2. 安装依赖：
-   ```bash
-   npm install
-   ```
-
-3. 启动开发模式：
-   ```bash
-   npm run tauri:dev
-   ```
-
-## 🔨 构建
-
-### 开发构建
-
-```bash
-npm run tauri:dev
-```
-
-### 生产构建
-
-```bash
-npm run tauri:build
-```
-
-构建产物位于 `src-tauri/target/release/bundle/`
-
-## 🗺️ 开发路线图
+## 开发路线图
 
 - [x] 基础仪表盘功能
 - [x] 配置文件编辑器
 - [x] 日志实时监控
 - [x] 会话和文件管理
-- [ ] 配置验证和错误提示增强
-- [ ] 支持暗色主题
-- [ ] 多语言支持（i18n）
+- [x] 配置验证和错误提示增强
+- [x] 多语言支持（i18n）
+- [x] 性能监控图表
+- [ ] 暗色主题
 - [ ] 自动更新功能
-- [ ] 性能监控图表
 
-## 🤝 贡献
+## 致谢
 
-欢迎提交 Issue 和 Pull Request！
+- [nanobot](https://github.com/HKUDS/nanobot)
 
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启一个 Pull Request
+## 贡献者
 
-### 开发规范
+![贡献者](https://contrib.rocks/image?repo=Freakz3z/nanoboard)
 
-- 遵循 ESLint 和 Prettier 代码规范
-- 提交前运行 `npm run build` 确保构建成功
-- 为新功能添加适当的注释
-- 更新相关文档
+## Star 趋势
 
-## 📄 许可证
-
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-## 👨‍💻 作者
-
-**Freakz3z** - [GitHub](https://github.com/Freakz3z)
-
-## 🙏 致谢
-
-- [Nanobot](https://github.com/HKUDS/nanobot) - 超轻量级个人 AI 助手
-- [Tauri](https://tauri.app/) - 跨平台桌面应用框架
-- [React](https://react.dev/) - UI 框架
-- [TailwindCSS](https://tailwindcss.com/) - CSS 框架
-- [Lucide](https://lucide.dev/) - 图标库
-
----
+<div align="center">
+  <a href="https://star-history.com/#Freakz3z/nanoboard&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Freakz3z/nanoboard&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Freakz3z/nanoboard&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Freakz3z/nanoboard&type=Date" style="border-radius: 15px; box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);" />
+    </picture>
+  </a>
+</div>

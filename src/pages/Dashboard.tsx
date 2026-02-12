@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { processApi, configApi, loggerApi, networkApi } from "../lib/tauri";
 import NetworkMonitor from "../components/NetworkMonitor";
 import { useToast } from "../contexts/ToastContext";
@@ -89,6 +90,7 @@ interface Config {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const toast = useToast();
   const [status, setStatus] = useState<Status>({ running: false });
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
@@ -166,7 +168,7 @@ export default function Dashboard() {
       const result = await processApi.getStatus();
       setStatus(result);
     } catch (error) {
-      console.error("获取状态失败:", error);
+      console.error(t("dashboard.fetchStatusFailed"), error);
     }
   }
 
@@ -175,7 +177,7 @@ export default function Dashboard() {
       const result = await processApi.getSystemInfo();
       setSystemInfo(result);
     } catch (error) {
-      console.error("获取系统信息失败:", error);
+      console.error(t("dashboard.fetchSystemInfoFailed"), error);
     }
   }
 
@@ -184,7 +186,7 @@ export default function Dashboard() {
       const result = await processApi.getVersion();
       setNanobotVersion(result);
     } catch (error) {
-      console.error("获取版本信息失败:", error);
+      console.error(t("dashboard.fetchVersionFailed"), error);
     }
   }
 
@@ -195,7 +197,7 @@ export default function Dashboard() {
         setNanobotPath(result.path);
       }
     } catch (error) {
-      console.error("获取 nanobot 路径失败:", error);
+      console.error(t("dashboard.fetchNanobotPathFailed"), error);
     }
   }
 
@@ -206,7 +208,7 @@ export default function Dashboard() {
         setConfig(result);
       }
     } catch (error) {
-      console.error("获取配置失败:", error);
+      console.error(t("dashboard.fetchConfigFailed"), error);
     }
   }
 
@@ -215,7 +217,7 @@ export default function Dashboard() {
       const result = await loggerApi.getStatistics();
       setLogStatistics(result);
     } catch (error) {
-      console.error("获取日志统计失败:", error);
+      console.error(t("dashboard.fetchLogStatsFailed"), error);
     }
   }
 
@@ -224,15 +226,34 @@ export default function Dashboard() {
     try {
       const stats = await networkApi.getStats();
       setNetworkData(prev => {
+        const lastData = prev[prev.length - 1];
+
+        // 平滑处理：如果当前值为0但上一次有值，则逐渐衰减而不是突变为0
+        let smoothUpload = stats.upload_speed || 0;
+        let smoothDownload = stats.download_speed || 0;
+
+        // 如果上传速度为0但上次有值，进行衰减处理（保留上次值的50%）
+        if (smoothUpload === 0 && lastData && lastData.upload > 0) {
+          smoothUpload = lastData.upload * 0.5;
+        }
+        // 如果下载速度为0但上次有值，进行衰减处理
+        if (smoothDownload === 0 && lastData && lastData.download > 0) {
+          smoothDownload = lastData.download * 0.5;
+        }
+
+        // 最小显示值为 0.1 B/s，避免完全显示为0
+        const displayUpload = smoothUpload > 0 && smoothUpload < 0.1 ? 0.1 : smoothUpload;
+        const displayDownload = smoothDownload > 0 && smoothDownload < 0.1 ? 0.1 : smoothDownload;
+
         const newData = [...prev.slice(-59), {
           timestamp: Date.now(),
-          upload: stats.upload_speed || 0,
-          download: stats.download_speed || 0,
+          upload: displayUpload,
+          download: displayDownload,
         }];
         return newData;
       });
     } catch (error) {
-      console.error("获取网络统计失败:", error);
+      console.error(t("dashboard.fetchNetworkStatsFailed"), error);
     }
   }
 
@@ -244,13 +265,13 @@ export default function Dashboard() {
       setDiagnosisResult(result);
       setShowDiagnosis(true);
     } catch (error) {
-      console.error("诊断失败:", error);
+      console.error(t("dashboard.diagnosisFailed"), error);
       setDiagnosisResult({
         overall: "error",
         checks: [{
-          name: "诊断工具",
+          name: t("dashboard.diagnosis"),
           status: "error",
-          message: "诊断失败: " + (error as Error).message,
+          message: t("dashboard.diagnosisFailed") + (error as Error).message,
           details: null,
         }]
       });
@@ -265,21 +286,21 @@ export default function Dashboard() {
     setInstallingWithUv(true);
     try {
       // 1. 使用 uv 下载安装
-      toast.showInfo("正在使用 uv 下载安装 nanobot-ai...");
+      toast.showInfo(t("dashboard.installingWithUvDesc"));
       const downloadResult = await processApi.downloadWithUv();
       if (downloadResult.status !== "success") {
-        toast.showError("安装失败: " + downloadResult.message);
+        toast.showError(t("dashboard.installFailed") + downloadResult.message);
         return;
       }
-      toast.showSuccess("Nanobot 安装成功（使用 uv）！");
+      toast.showSuccess(t("dashboard.installSuccessWithUv"));
 
       // 2. 初始化
-      toast.showInfo("正在初始化 nanobot...");
+      toast.showInfo(t("dashboard.initializingNanobot"));
       const onboardResult = await processApi.onboard();
       if (onboardResult.status === "success") {
-        toast.showSuccess("Nanobot 初始化成功！");
+        toast.showSuccess(t("dashboard.nanobotInitialized"));
       } else {
-        toast.showError("初始化失败: " + onboardResult.message);
+        toast.showError(t("dashboard.initializeFailed") + onboardResult.message);
       }
 
       // 3. 刷新状态
@@ -287,8 +308,8 @@ export default function Dashboard() {
       await loadNanobotPath();
       await loadConfig();
     } catch (error) {
-      console.error("操作失败:", error);
-      toast.showError("操作失败: " + (error as Error).message);
+      console.error(t("dashboard.operationFailed"), error);
+      toast.showError(t("dashboard.operationFailedToast") + (error as Error).message);
     } finally {
       setInstallingWithUv(false);
     }
@@ -299,21 +320,21 @@ export default function Dashboard() {
     setInstallingWithPip(true);
     try {
       // 1. 使用 pip 下载安装
-      toast.showInfo("正在使用 pip 下载安装 nanobot-ai...");
+      toast.showInfo(t("dashboard.installingWithPipDesc"));
       const downloadResult = await processApi.download();
       if (downloadResult.status !== "success") {
-        toast.showError("安装失败: " + downloadResult.message);
+        toast.showError(t("dashboard.installFailed") + downloadResult.message);
         return;
       }
-      toast.showSuccess("Nanobot 安装成功（使用 pip）！");
+      toast.showSuccess(t("dashboard.installSuccessWithPip"));
 
       // 2. 初始化
-      toast.showInfo("正在初始化 nanobot...");
+      toast.showInfo(t("dashboard.initializingNanobot"));
       const onboardResult = await processApi.onboard();
       if (onboardResult.status === "success") {
-        toast.showSuccess("Nanobot 初始化成功！");
+        toast.showSuccess(t("dashboard.nanobotInitialized"));
       } else {
-        toast.showError("初始化失败: " + onboardResult.message);
+        toast.showError(t("dashboard.initializeFailed") + onboardResult.message);
       }
 
       // 3. 刷新状态
@@ -321,8 +342,8 @@ export default function Dashboard() {
       await loadNanobotPath();
       await loadConfig();
     } catch (error) {
-      console.error("操作失败:", error);
-      toast.showError("操作失败: " + (error as Error).message);
+      console.error(t("dashboard.operationFailed"), error);
+      toast.showError(t("dashboard.operationFailedToast") + (error as Error).message);
     } finally {
       setInstallingWithPip(false);
     }
@@ -340,9 +361,9 @@ export default function Dashboard() {
                 <Activity className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mb-1">系统状态</p>
+            <p className="text-xs text-gray-500 mb-1">{t("dashboard.systemStatus")}</p>
             <p className="text-2xl font-semibold text-gray-900">
-              {status.running ? "活跃" : "离线"}
+              {status.running ? t("dashboard.active") : t("dashboard.offline")}
             </p>
           </div>
 
@@ -353,7 +374,7 @@ export default function Dashboard() {
                 <Zap className="w-5 h-5 text-indigo-600" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mb-1">服务端口</p>
+            <p className="text-xs text-gray-500 mb-1">{t("dashboard.servicePort")}</p>
             <p className="text-2xl font-semibold text-gray-900">
               {status.port || "N/A"}
             </p>
@@ -366,7 +387,7 @@ export default function Dashboard() {
                 <Clock className="w-5 h-5 text-purple-600" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mb-1">运行时长</p>
+            <p className="text-xs text-gray-500 mb-1">{t("dashboard.uptime")}</p>
             <p className="text-2xl font-semibold text-gray-900">
               {status.uptime || "--:--"}
             </p>
@@ -383,12 +404,12 @@ export default function Dashboard() {
                   ? "bg-green-50 text-green-700"
                   : "bg-red-50 text-red-700"
               }`}>
-                {nanobotVersion?.installed ? "已安装" : "未安装"}
+                {nanobotVersion?.installed ? t("dashboard.installed") : t("dashboard.notInstalled")}
               </span>
             </div>
-            <p className="text-xs text-gray-500 mb-1">nanobot 版本</p>
-            <p className="text-lg font-semibold text-gray-900 truncate" title={nanobotVersion?.version || nanobotVersion?.message || "检测中..."}>
-              {nanobotVersion?.version || nanobotVersion?.message || "检测中..."}
+            <p className="text-xs text-gray-500 mb-1">{t("dashboard.version")}</p>
+            <p className="text-lg font-semibold text-gray-900 truncate" title={nanobotVersion?.version || nanobotVersion?.message || t("dashboard.detecting")}>
+              {nanobotVersion?.version || nanobotVersion?.message || t("dashboard.detecting")}
             </p>
           </div>
         </div>
@@ -403,7 +424,7 @@ export default function Dashboard() {
                   <Server className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-3">LLM Provider</p>
+              <p className="text-xs text-gray-500 mb-3">{t("dashboard.llmProvider")}</p>
               {(() => {
                 const configuredProviders = config.providers
                   ? Object.entries(config.providers).filter(
@@ -416,18 +437,18 @@ export default function Dashboard() {
                       <div key={providerKey} className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">{providerKey}</span>
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                          已配置
+                          {t("dashboard.configured")}
                         </span>
                       </div>
                     ))}
                     {configuredProviders.length > 4 && (
                       <p className="text-xs text-gray-500">
-                        共 {configuredProviders.length} 个 Provider
+                        {t("dashboard.totalProviders", { count: configuredProviders.length })}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500">暂无配置</p>
+                  <p className="text-xs text-gray-500">{t("dashboard.noConfiguration")}</p>
                 );
               })()}
             </div>
@@ -439,36 +460,36 @@ export default function Dashboard() {
                   <Bot className="w-5 h-5 text-indigo-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-3">Agent 配置</p>
+              <p className="text-xs text-gray-500 mb-3">{t("dashboard.agentConfig")}</p>
               {config.agents?.defaults ? (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">模型</span>
+                    <span className="text-xs text-gray-500">{t("dashboard.model")}</span>
                     <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]" title={config.agents.defaults.model}>
                       {config.agents.defaults.model || '-'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">最大 Token</span>
+                    <span className="text-xs text-gray-500">{t("dashboard.maxTokens")}</span>
                     <span className="text-xs font-medium text-gray-700">
                       {config.agents.defaults.max_tokens || '-'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">最大工具迭代次数</span>
+                    <span className="text-xs text-gray-500">{t("dashboard.maxToolIterations")}</span>
                     <span className="text-xs font-medium text-gray-700">
                       {config.agents.defaults.max_tool_iterations || '-'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">温度</span>
+                    <span className="text-xs text-gray-500">{t("dashboard.temperature")}</span>
                     <span className="text-xs font-medium text-gray-700">
                       {config.agents.defaults.temperature || '-'}
                     </span>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">暂无配置</p>
+                <p className="text-xs text-gray-500">{t("dashboard.noConfiguration")}</p>
               )}
             </div>
 
@@ -479,7 +500,7 @@ export default function Dashboard() {
                   <MessageSquare className="w-5 h-5 text-purple-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-3">消息渠道</p>
+              <p className="text-xs text-gray-500 mb-3">{t("dashboard.messageChannels")}</p>
               {config.channels && Object.keys(config.channels).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(config.channels)
@@ -489,21 +510,21 @@ export default function Dashboard() {
                       <div key={channelKey} className="flex items-center justify-between">
                         <span className="text-xs text-gray-600 capitalize">{channelKey}</span>
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                          已启用
+                          {t("dashboard.enabled")}
                         </span>
                       </div>
                     ))}
                   {Object.values(config.channels).filter((c: any) => c?.enabled).length === 0 && (
-                    <p className="text-xs text-gray-500">暂无启用渠道</p>
+                    <p className="text-xs text-gray-500">{t("dashboard.noEnabledChannels")}</p>
                   )}
                   {Object.values(config.channels).filter((c: any) => c?.enabled).length > 3 && (
                     <p className="text-xs text-gray-500">
-                      共 {Object.values(config.channels).filter((c: any) => c?.enabled).length} 个渠道
+                      {t("dashboard.totalChannels", { count: Object.values(config.channels).filter((c: any) => c?.enabled).length })}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">暂无配置</p>
+                <p className="text-xs text-gray-500">{t("dashboard.noConfiguration")}</p>
               )}
             </div>
           </div>
@@ -518,7 +539,7 @@ export default function Dashboard() {
                 <div className="p-2 bg-indigo-50 rounded-lg">
                   <Activity className="w-5 h-5 text-indigo-600" />
                 </div>
-                <span className="text-xs font-medium text-gray-500">性能监控</span>
+                <span className="text-xs font-medium text-gray-500">{t("dashboard.performanceMonitoring")}</span>
               </div>
               <div className="space-y-3">
                 {/* CPU */}
@@ -526,7 +547,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-1.5">
                       <Cpu className="w-3.5 h-3.5 text-blue-600" />
-                      <span className="text-xs text-gray-600">CPU</span>
+                      <span className="text-xs text-gray-600">{t("dashboard.cpu")}</span>
                     </div>
                     <span className="text-xs font-medium text-gray-700">{systemInfo.cpu.usage_text}</span>
                   </div>
@@ -542,7 +563,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-1.5">
                       <HardDrive className="w-3.5 h-3.5 text-green-600" />
-                      <span className="text-xs text-gray-600">内存</span>
+                      <span className="text-xs text-gray-600">{t("dashboard.memory")}</span>
                     </div>
                     <span className="text-xs font-medium text-gray-700">{systemInfo.memory.usage_text}</span>
                   </div>
@@ -561,7 +582,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-1.5">
                       <Database className="w-3.5 h-3.5 text-purple-600" />
-                      <span className="text-xs text-gray-600">磁盘</span>
+                      <span className="text-xs text-gray-600">{t("dashboard.disk")}</span>
                     </div>
                     <span className="text-xs font-medium text-gray-700">{systemInfo.disk.usage_text}</span>
                   </div>
@@ -585,7 +606,7 @@ export default function Dashboard() {
                   <div className="p-2 bg-cyan-50 rounded-lg">
                     <TrendingUp className="w-5 h-5 text-cyan-600" />
                   </div>
-                  <span className="text-xs font-medium text-gray-500">网络监控</span>
+                  <span className="text-xs font-medium text-gray-500">{t("dashboard.networkMonitoring")}</span>
                 </div>
                 <NetworkMonitor data={networkData} />
               </div>
@@ -599,10 +620,10 @@ export default function Dashboard() {
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <span className="text-sm font-medium text-gray-700">
-                    {logStatistics.total} 条
+                    {logStatistics.total} {t("dashboard.entries")}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">日志统计</p>
+                <p className="text-xs text-gray-500 mb-3">{t("dashboard.logStatistics")}</p>
                 <div className="space-y-2">
                   {/* DEBUG */}
                   <div>
@@ -675,7 +696,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
               <Zap className="w-5 h-5 text-indigo-600" />
-              系统信息
+              {t("dashboard.systemInfo")}
             </h2>
             <div className="flex flex-wrap gap-2">
               {/* uv 下载按钮 */}
@@ -685,7 +706,7 @@ export default function Dashboard() {
                 className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 <Download className="w-4 h-4" />
-                {installingWithUv ? "安装中..." : "uv 下载"}
+                {installingWithUv ? t("dashboard.installingWithUv") : t("dashboard.downloadWithUv")}
               </button>
 
               {/* pip 下载按钮 */}
@@ -695,7 +716,7 @@ export default function Dashboard() {
                 className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 <Download className="w-4 h-4" />
-                {installingWithPip ? "安装中..." : "pip 下载"}
+                {installingWithPip ? t("dashboard.installingWithPip") : t("dashboard.downloadWithPip")}
               </button>
 
               {/* 环境诊断按钮 */}
@@ -705,7 +726,7 @@ export default function Dashboard() {
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 <Stethoscope className="w-4 h-4" />
-                {diagnosing ? "诊断中..." : "环境诊断"}
+                {diagnosing ? t("dashboard.diagnosing") : t("dashboard.diagnosis")}
               </button>
             </div>
           </div>
@@ -720,7 +741,7 @@ export default function Dashboard() {
                   <XCircle className="w-5 h-5 text-red-600" />
                 )}
                 <h3 className="font-semibold text-gray-900">
-                  诊断结果: {diagnosisResult.overall === "passed" ? "通过" : "发现问题"}
+                  {t("dashboard.diagnosisResult")}: {diagnosisResult.overall === "passed" ? t("dashboard.passed") : t("dashboard.issuesFound")}
                 </h3>
               </div>
               <div className="space-y-3">
@@ -739,7 +760,7 @@ export default function Dashboard() {
                           check.status === "warning" ? "bg-amber-100 text-amber-700" :
                           "bg-red-100 text-red-700"
                         }`}>
-                          {check.status === "ok" ? "正常" : check.status === "warning" ? "警告" : "错误"}
+                          {check.status === "ok" ? t("dashboard.normal") : check.status === "warning" ? t("dashboard.warning") : t("dashboard.error")}
                         </span>
                       </div>
                       <p className="text-xs text-gray-600 mt-1">{check.message}</p>
@@ -756,17 +777,17 @@ export default function Dashboard() {
                 onClick={() => setShowDiagnosis(false)}
                 className="mt-4 text-sm text-gray-600 hover:text-gray-900"
               >
-                关闭诊断结果
+                {t("dashboard.closeDiagnosisResult")}
               </button>
             </div>
           )}
 
           <div className="space-y-3">
             {[
-              { icon: FileText, label: "配置文件位置", value: "~/.nanobot/config.json" },
-              { icon: FileText, label: "工作区位置", value: "~/.nanobot/workspace" },
-              { icon: FileText, label: "日志位置", value: "~/.nanobot/logs/nanobot.log" },
-              { icon: Bot, label: "nanobot 位置", value: nanobotPath || "未安装" },
+              { icon: FileText, label: t("dashboard.configFileLocation"), value: "~/.nanobot/config.json" },
+              { icon: FileText, label: t("dashboard.workspaceLocation"), value: "~/.nanobot/workspace" },
+              { icon: FileText, label: t("dashboard.logLocation"), value: "~/.nanobot/logs/nanobot.log" },
+              { icon: Bot, label: t("dashboard.nanobotLocation"), value: nanobotPath || t("dashboard.notInstalled") },
             ].map((item, index) => (
               <div
                 key={index}

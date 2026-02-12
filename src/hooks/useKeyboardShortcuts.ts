@@ -7,7 +7,8 @@ interface KeyboardShortcut {
   altKey?: boolean;
   metaKey?: boolean;
   handler: () => void;
-  description: string;
+  descriptionKey?: string;  // 使用翻译 key
+  description?: string;     // 兼容旧版本
 }
 
 export function useKeyboardShortcuts(
@@ -38,14 +39,15 @@ export function useKeyboardShortcuts(
   }, [shortcuts, enabled]);
 }
 
+// 快捷键定义（使用翻译 key）
 export const SHORTCUTS = {
-  SAVE: { key: "s", ctrlKey: true, description: "保存" },
-  REFRESH: { key: "r", ctrlKey: true, description: "刷新" },
-  SEARCH: { key: "k", ctrlKey: true, description: "搜索" },
-  NEW_TAB: { key: "t", ctrlKey: true, description: "新建标签" },
-  CLOSE_TAB: { key: "w", ctrlKey: true, description: "关闭标签" },
-  DASHBOARD: { key: "1", altKey: true, description: "仪表盘" },
-  CONFIG: { key: "2", altKey: true, description: "配置" },
-  LOGS: { key: "3", altKey: true, description: "日志" },
-  SESSIONS: { key: "4", altKey: true, description: "会话" },
+  SAVE: { key: "s", ctrlKey: true, descriptionKey: "keyboardShortcuts.save" },
+  REFRESH: { key: "r", ctrlKey: true, descriptionKey: "keyboardShortcuts.refresh" },
+  SEARCH: { key: "k", ctrlKey: true, descriptionKey: "keyboardShortcuts.search" },
+  NEW_TAB: { key: "t", ctrlKey: true, descriptionKey: "keyboardShortcuts.newTab" },
+  CLOSE_TAB: { key: "w", ctrlKey: true, descriptionKey: "keyboardShortcuts.closeTab" },
+  DASHBOARD: { key: "1", altKey: true, descriptionKey: "keyboardShortcuts.dashboard" },
+  CONFIG: { key: "2", altKey: true, descriptionKey: "keyboardShortcuts.config" },
+  LOGS: { key: "3", altKey: true, descriptionKey: "keyboardShortcuts.logs" },
+  SESSIONS: { key: "4", altKey: true, descriptionKey: "keyboardShortcuts.sessions" },
 };

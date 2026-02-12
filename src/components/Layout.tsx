@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   Settings,
@@ -8,6 +9,7 @@ import {
   Play,
   Square,
   RefreshCw,
+  Languages,
 } from "lucide-react";
 import { processApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
@@ -22,17 +24,18 @@ interface Status {
   uptime?: string;
 }
 
-const navItems = [
-  { path: "/", label: "仪表盘", icon: LayoutDashboard },
-  { path: "/logs", label: "日志监控", icon: ScrollText },
-  { path: "/sessions", label: "文件管理", icon: FileText },
-  { path: "/config", label: "编辑配置", icon: Settings },
-];
-
 export default function Layout({ children }: LayoutProps) {
+  const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<Status>({ running: false });
   const [loading, setLoading] = useState(false);
   const toast = useToast();
+
+  const navItems = [
+    { path: "/", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { path: "/logs", label: t("nav.logs"), icon: ScrollText },
+    { path: "/sessions", label: t("nav.sessions"), icon: FileText },
+    { path: "/config", label: t("nav.config"), icon: Settings },
+  ];
 
   useEffect(() => {
     loadStatus();
@@ -63,9 +66,9 @@ export default function Layout({ children }: LayoutProps) {
     try {
       const configCheck = await processApi.checkConfig();
       if (!configCheck.valid) {
-        toast.showWarning(configCheck.message || "配置检查失败");
+        toast.showWarning(configCheck.message || t("toast.configCheckFailed"));
         if (configCheck.issue === "api_key_missing") {
-          toast.showInfo("请在配置编辑器中添加 API key");
+          toast.showInfo(t("toast.addApiKey"));
         }
         setLoading(false);
         return;
@@ -75,17 +78,17 @@ export default function Layout({ children }: LayoutProps) {
       if (result.status === "started") {
         await loadStatus();
         localStorage.setItem("autoStartLogMonitor", "true");
-        toast.showSuccess("nanobot 启动成功");
+        toast.showSuccess(t("layout.nanobotStartSuccess"));
       } else if (result.status === "already_running") {
         await loadStatus();
         localStorage.setItem("autoStartLogMonitor", "true");
-        toast.showInfo("nanobot 已经在运行中");
+        toast.showInfo(t("layout.nanobotAlreadyRunning"));
       } else if (result.status === "failed") {
         await loadStatus();
-        toast.showError(result.message || "nanobot 启动失败");
+        toast.showError(result.message || t("layout.nanobotStartFailed"));
       }
     } catch (error) {
-      toast.showError("启动失败，请检查配置");
+      toast.showError(t("layout.nanobotStartFailed"));
     } finally {
       setLoading(false);
     }
@@ -96,9 +99,9 @@ export default function Layout({ children }: LayoutProps) {
     try {
       await processApi.stop();
       await loadStatus();
-      toast.showSuccess("nanobot 已停止");
+      toast.showSuccess(t("layout.nanobotStopSuccess"));
     } catch (error) {
-      toast.showError("停止失败");
+      toast.showError(t("layout.nanobotStopFailed"));
     } finally {
       setLoading(false);
     }
@@ -106,26 +109,26 @@ export default function Layout({ children }: LayoutProps) {
 
   async function handleRestart() {
     if (!status.running) {
-      toast.showInfo("nanobot 未运行，无法重启");
+      toast.showInfo(t("layout.nanobotNotRunning"));
       return;
     }
 
     setLoading(true);
     try {
       await processApi.stop();
-      toast.showInfo("正在重启 nanobot...");
+      toast.showInfo(t("layout.restarting"));
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const result = await processApi.start(18790);
       if (result.status === "started") {
         await loadStatus();
-        toast.showSuccess("nanobot 重启成功");
+        toast.showSuccess(t("layout.nanobotRestartSuccess"));
       } else if (result.status === "failed") {
         await loadStatus();
-        toast.showError(result.message || "nanobot 重启失败");
+        toast.showError(result.message || t("layout.nanobotRestartFailed"));
       }
     } catch (error) {
-      toast.showError("重启失败");
+      toast.showError(t("layout.nanobotRestartFailed"));
       await loadStatus();
     } finally {
       setLoading(false);
@@ -143,12 +146,24 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex flex-col items-center gap-3">
               <img
                 src="/assets/logo.png"
-                alt="Nanoboard Logo"
+                alt={t("layout.logoAlt")}
                 className="w-12 h-12 rounded-lg"
               />
               <h1 className="text-lg font-semibold text-gray-900">
-                nanoboard
+                {t("app.name")}
               </h1>
+              {/* 语言切换标志 */}
+              <button
+                onClick={() => {
+                  const newLang = i18n.language === 'zh-CN' ? 'en-US' : 'zh-CN';
+                  i18n.changeLanguage(newLang);
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all text-xs font-medium"
+                title={t("language.switch")}
+              >
+                <Languages className="w-3 h-3" />
+                <span>{i18n.language === 'zh-CN' ? '中文' : 'EN'}</span>
+              </button>
             </div>
           </div>
 
@@ -182,7 +197,7 @@ export default function Layout({ children }: LayoutProps) {
                   ? "bg-red-50 text-red-600 hover:bg-red-100"
                   : "bg-green-50 text-green-600 hover:bg-green-100"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
-              title={status.running ? "停止 nanobot" : "启动 nanobot"}
+              title={status.running ? t("layout.stopNanobot") : t("layout.startNanobot")}
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -191,17 +206,17 @@ export default function Layout({ children }: LayoutProps) {
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              <span>{status.running ? "停止" : "启动"}</span>
+              <span>{status.running ? t("layout.stop") : t("layout.start")}</span>
             </button>
 
             <button
               onClick={handleRestart}
               disabled={loading || !status.running}
               className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              title="重启 nanobot"
+              title={t("layout.restartNanobot")}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>重启</span>
+              <span>{t("layout.restart")}</span>
             </button>
           </div>
         </aside>

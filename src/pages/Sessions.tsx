@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fsApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
 import {
@@ -32,6 +33,7 @@ interface Breadcrumb {
 }
 
 export default function Sessions() {
+  const { t, i18n } = useTranslation();
   const [currentPath, setCurrentPath] = useState<string>("");
   const [items, setItems] = useState<FsItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<FsItem | null>(null);
@@ -87,10 +89,10 @@ export default function Sessions() {
         setSelectedItem(null);
         setFileContent("");
       } else {
-        toast.showError(result.message || "加载目录失败");
+        toast.showError(result.message || t("sessions.loadDirectoryFailed"));
       }
     } catch (error) {
-      toast.showError("加载目录失败");
+      toast.showError(t("sessions.loadDirectoryFailed"));
     }
   }
 
@@ -103,16 +105,16 @@ export default function Sessions() {
         setFileContent(result.content || "");
         setSelectedItem(item);
       } else {
-        toast.showError(result.message || "加载文件内容失败");
+        toast.showError(result.message || t("sessions.loadFileContentFailed"));
       }
     } catch (error) {
-      toast.showError("加载文件内容失败");
+      toast.showError(t("sessions.loadFileContentFailed"));
     }
   }
 
   async function createFolder() {
     if (!createFolderDialog.folderName.trim()) {
-      toast.showError("请输入文件夹名称");
+      toast.showError(t("sessions.enterFolderName"));
       return;
     }
 
@@ -122,14 +124,14 @@ export default function Sessions() {
         createFolderDialog.folderName.trim()
       );
       if (result.success) {
-        toast.showSuccess(result.message || "文件夹已创建");
+        toast.showSuccess(result.message || t("sessions.createFolderSuccess"));
         setCreateFolderDialog({ isOpen: false, folderName: "" });
         await loadDirectory(currentPath);
       } else {
-        toast.showError(result.message || "创建文件夹失败");
+        toast.showError(result.message || t("sessions.createFolderFailed"));
       }
     } catch (error) {
-      toast.showError("创建文件夹失败");
+      toast.showError(t("sessions.createFolderFailed"));
     }
   }
 
@@ -137,10 +139,10 @@ export default function Sessions() {
     const isFile = item.type === "file";
     setConfirmDialog({
       isOpen: true,
-      title: isFile ? "删除文件" : "删除文件夹",
+      title: isFile ? t("sessions.deleteFile") : t("sessions.deleteFolder"),
       message: isFile
-        ? `确定要删除文件 "${item.name}" 吗？此操作不可撤销。`
-        : `确定要删除文件夹 "${item.name}" 及其所有内容吗？此操作不可撤销。`,
+        ? t("sessions.deleteFileConfirm", { name: item.name })
+        : t("sessions.deleteFolderConfirm", { name: item.name }),
       type: "warning",
       onConfirm: async () => {
         try {
@@ -149,17 +151,17 @@ export default function Sessions() {
             : await fsApi.deleteFolder(item.relative_path);
 
           if (result.success) {
-            toast.showSuccess(result.message || "已删除");
+            toast.showSuccess(result.message || t("sessions.deleted"));
             if (selectedItem?.relative_path === item.relative_path) {
               setSelectedItem(null);
               setFileContent("");
             }
             await loadDirectory(currentPath);
           } else {
-            toast.showError(result.message || "删除失败");
+            toast.showError(result.message || t("sessions.deleteFailed"));
           }
         } catch (error) {
-          toast.showError(isFile ? "删除文件失败" : "删除文件夹失败");
+          toast.showError(isFile ? t("sessions.deleteFileFailed") : t("sessions.deleteFolderFailed"));
         } finally {
           setConfirmDialog({
             isOpen: false,
@@ -183,7 +185,7 @@ export default function Sessions() {
 
   async function confirmRename() {
     if (!renameDialog.item || !renameDialog.newName.trim()) {
-      toast.showError("请输入新名称");
+      toast.showError(t("sessions.enterNewName"));
       return;
     }
 
@@ -193,19 +195,19 @@ export default function Sessions() {
         renameDialog.newName.trim()
       );
       if (result.success) {
-        toast.showSuccess(result.message || "重命名成功");
+        toast.showSuccess(result.message || t("sessions.renameSuccess"));
         setRenameDialog({ isOpen: false, item: null, newName: "" });
         await loadDirectory(currentPath);
       } else {
-        toast.showError(result.message || "重命名失败");
+        toast.showError(result.message || t("sessions.renameFailed"));
       }
     } catch (error) {
-      toast.showError("重命名失败");
+      toast.showError(t("sessions.renameFailed"));
     }
   }
 
   function formatTimestamp(timestamp: number): string {
-    if (!timestamp) return "未知";
+    if (!timestamp) return t("sessions.unknown");
     const date = new Date(timestamp * 1000);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -215,15 +217,15 @@ export default function Sessions() {
       const hours = Math.floor(diff / (1000 * 60 * 60));
       if (hours === 0) {
         const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? "刚刚" : `${minutes} 分钟前`;
+        return minutes <= 1 ? t("sessions.justNow") : t("sessions.minutesAgo", { count: minutes });
       }
-      return `${hours} 小时前`;
+      return t("sessions.hoursAgo", { count: hours });
     } else if (days === 1) {
-      return "昨天";
+      return t("sessions.yesterday");
     } else if (days < 7) {
-      return `${days} 天前`;
+      return t("sessions.daysAgo", { count: days });
     } else {
-      return date.toLocaleDateString("zh-CN");
+      return date.toLocaleDateString(i18n.language === "en" ? "en-US" : "zh-CN");
     }
   }
 
@@ -264,7 +266,7 @@ export default function Sessions() {
       <div className="border-b border-gray-200 bg-white flex-shrink-0">
         {/* 标题栏 */}
         <div className="px-6 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">文件管理</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t("sessions.title")}</h1>
         </div>
 
         {/* 面包屑导航和搜索栏 */}
@@ -281,7 +283,7 @@ export default function Sessions() {
                 }`}
               >
                 <Home className="w-4 h-4" />
-                工作区
+                {t("sessions.workspace")}
               </button>
               {getBreadcrumbs().map((crumb, index) => (
                 <div key={crumb.path} className="flex items-center gap-1">
@@ -305,7 +307,7 @@ export default function Sessions() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="搜索文件和文件夹..."
+                placeholder={t("sessions.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -327,12 +329,12 @@ export default function Sessions() {
               <EmptyState
                 icon={searchQuery ? Search : HardDrive}
                 title={
-                  searchQuery ? "未找到匹配的文件" : "文件夹为空"
+                  searchQuery ? t("sessions.noMatchingFiles") : t("sessions.noFiles")
                 }
                 description={
                   searchQuery
-                    ? "请尝试其他搜索关键词"
-                    : "点击上方按钮创建新文件夹"
+                    ? t("sessions.tryOtherKeywords")
+                    : t("sessions.noFilesDesc")
                 }
               />
             ) : (
@@ -366,7 +368,7 @@ export default function Sessions() {
                       </h3>
                       {isProtectedItem(item.name) && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 flex-shrink-0">
-                          保护
+                          {t("sessions.protected")}
                         </span>
                       )}
                     </div>
@@ -388,7 +390,7 @@ export default function Sessions() {
                           renameItem(item);
                         }}
                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
-                        title="重命名"
+                        title={t("sessions.rename")}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -400,7 +402,7 @@ export default function Sessions() {
                           deleteItem(item);
                         }}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                        title="删除"
+                        title={t("sessions.delete")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -456,8 +458,8 @@ export default function Sessions() {
             <div className="flex-1 flex items-center justify-center">
               <EmptyState
                 icon={FileText}
-                title="选择一个文件"
-                description="点击左侧列表查看文件详情"
+                title={t("sessions.selectFile")}
+                description={t("sessions.selectFileDesc")}
               />
             </div>
           )}
@@ -469,10 +471,10 @@ export default function Sessions() {
       {createFolderDialog.isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">创建文件夹</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("sessions.createFolder")}</h3>
             <input
               type="text"
-              placeholder="文件夹名称"
+              placeholder={t("sessions.folderName")}
               value={createFolderDialog.folderName}
               onChange={(e) =>
                 setCreateFolderDialog({
@@ -497,13 +499,13 @@ export default function Sessions() {
                 }
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                取消
+                {t("config.cancel")}
               </button>
               <button
                 onClick={createFolder}
                 className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
               >
-                创建
+                {t("sessions.createFolder")}
               </button>
             </div>
           </div>
@@ -515,11 +517,11 @@ export default function Sessions() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              重命名 {renameDialog.item?.type === "directory" ? "文件夹" : "文件"}
+              {renameDialog.item?.type === "directory" ? t("sessions.renameFolder") : t("sessions.renameFile")}
             </h3>
             <input
               type="text"
-              placeholder="新名称"
+              placeholder={t("sessions.newName")}
               value={renameDialog.newName}
               onChange={(e) =>
                 setRenameDialog({
@@ -544,13 +546,13 @@ export default function Sessions() {
                 }
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                取消
+                {t("config.cancel")}
               </button>
               <button
                 onClick={confirmRename}
                 className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
               >
-                确定
+                {t("config.save")}
               </button>
             </div>
           </div>

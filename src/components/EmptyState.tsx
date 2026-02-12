@@ -1,8 +1,9 @@
 import { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface EmptyStateProps {
   icon?: LucideIcon;
-  title: string;
+  title?: string;
   description?: string;
   action?: {
     label: string;
@@ -16,6 +17,8 @@ export default function EmptyState({
   description,
   action,
 }: EmptyStateProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
       {Icon && (
@@ -23,9 +26,9 @@ export default function EmptyState({
           <Icon className="w-8 h-8 text-gray-400" />
         </div>
       )}
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title || t("emptyState.title")}</h3>
       {description && (
-        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">{description}</p>
+        <p className="text-sm text-gray-500 mb-6 text-center max-w-md">{description || t("emptyState.description")}</p>
       )}
       {action && (
         <button

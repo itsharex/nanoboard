@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { loggerApi, events } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
 import { Play, Square, Search, X, Inbox, Download, BarChart3, Regex } from "lucide-react";
@@ -17,6 +18,7 @@ interface LogStatistics {
 }
 
 export default function Logs() {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<string[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,7 +106,7 @@ export default function Logs() {
           filtered = filtered.filter((log) => regex.test(log));
           setRegexError(null);
         } catch {
-          setRegexError("无效的正则表达式");
+          setRegexError(t("logs.invalidRegex"));
           filtered = [];
         }
       } else {
@@ -175,7 +177,7 @@ export default function Logs() {
       // 应用当前的搜索和级别过滤
       filterLogs(loadedLogs, searchQuery, logLevel);
     } catch (error) {
-      toast.showError("加载日志失败");
+      toast.showError(t("logs.loadLogsFailed"));
     } finally {
       setLoading(false);
     }
@@ -193,7 +195,7 @@ export default function Logs() {
           filtered = filtered.filter((log) => regex.test(log));
           setRegexError(null);
         } catch (error) {
-          setRegexError(error instanceof Error ? error.message : "无效的正则表达式");
+          setRegexError(error instanceof Error ? error.message : t("logs.invalidRegex"));
           // 正则表达式无效时，返回空结果
           filtered = [];
         }
@@ -271,9 +273,9 @@ export default function Logs() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.showSuccess(`已导出 ${filteredLogs.length} 条日志`);
+      toast.showSuccess(t("logs.logsExported", { count: filteredLogs.length }));
     } catch (error) {
-      toast.showError("导出日志失败");
+      toast.showError(t("logs.exportFailed"));
     }
   }
 
@@ -316,11 +318,11 @@ export default function Logs() {
         // 保存取消监听函数
         (window as any).__logUnlisten = unlisten;
 
-        toast.showSuccess("日志监控已启动");
+        toast.showSuccess(t("logs.startMonitoring"));
       } catch (error) {
         console.error("启动监控失败:", error);
         // Tauri 错误通常是字符串
-        let errorMessage = "启动监控失败";
+        let errorMessage = t("logs.startMonitoringFailed");
         if (typeof error === "string") {
           errorMessage = error;
         } else if (error instanceof Error) {
@@ -328,7 +330,7 @@ export default function Logs() {
         } else if (error && typeof error === "object" && "message" in error) {
           errorMessage = String(error.message);
         }
-        toast.showError(`启动监控失败: ${errorMessage}`);
+        toast.showError(`${t("logs.startMonitoringFailed")}: ${errorMessage}`);
         setStreaming(false);
         localStorage.setItem("logStreaming", "false");
       } finally {
@@ -341,7 +343,7 @@ export default function Logs() {
     <div className="flex-1 overflow-hidden flex flex-col">
       {/* 头部 */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-900 mb-4">日志监控</h1>
+        <h1 className="text-xl font-semibold text-gray-900 mb-4">{t("logs.title")}</h1>
 
         {/* 搜索框 */}
         <div className="relative">
@@ -350,7 +352,7 @@ export default function Logs() {
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder={useRegex ? "使用正则表达式搜索..." : "搜索日志内容..."}
+            placeholder={useRegex ? t("logs.searchWithRegex") : t("logs.searchLogs")}
             className={`w-full pl-10 pr-24 py-2 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
               regexError ? "border-red-300" : "border-gray-200"
             }`}
@@ -363,10 +365,10 @@ export default function Logs() {
                   ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
-              title={useRegex ? "切换到普通搜索" : "切换到正则表达式搜索"}
+              title={t("logs.toggleSearchMode", { mode: useRegex ? t("logs.normalSearch") : t("logs.regexSearch") })}
             >
               <Regex className="w-3.5 h-3.5" />
-              {useRegex ? "正则" : "普通"}
+              {useRegex ? t("logs.regexSearch") : t("logs.normalSearch")}
             </button>
             {searchQuery && (
               <button
@@ -389,7 +391,7 @@ export default function Logs() {
         {/* 日志级别过滤和操作按钮 */}
         <div className="flex items-center gap-3 mt-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">级别:</span>
+            <span className="text-sm text-gray-500">{t("logs.level")}</span>
             <div className="flex gap-1">
               <button
                 onClick={() => handleLevelChange("all")}
@@ -399,7 +401,7 @@ export default function Logs() {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                全部
+                {t("logs.all")}
               </button>
               <button
                 onClick={() => handleLevelChange("info")}
@@ -455,16 +457,16 @@ export default function Logs() {
               }`}
             >
               <BarChart3 className="w-4 h-4" />
-              统计
+              {t("logs.statistics")}
             </button>
             <button
               onClick={exportLogs}
               disabled={filteredLogs.length === 0}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed rounded-lg transition-colors text-sm font-medium text-gray-700"
-              title="导出日志"
+              title={t("logs.export")}
             >
               <Download className="w-4 h-4" />
-              导出
+              {t("logs.export")}
             </button>
             <button
               onClick={toggleStream}
@@ -478,12 +480,12 @@ export default function Logs() {
               {streaming ? (
                 <>
                   <Square className="w-4 h-4" />
-                  停止
+                  {t("logs.stop")}
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4" />
-                  开始
+                  {t("logs.start")}
                 </>
               )}
             </button>
@@ -493,7 +495,7 @@ export default function Logs() {
         {/* 过滤结果提示 */}
         {(searchQuery || logLevel !== "all") && (
           <div className="mt-2 text-sm text-gray-500">
-            找到 {filteredLogs.length} 条匹配的日志（共 {logs.length} 条）
+            {t("logs.findMatches", { count: filteredLogs.length, total: logs.length })}
           </div>
         )}
       </div>
@@ -504,8 +506,8 @@ export default function Logs() {
           <div className="max-w-6xl">
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">日志统计</h3>
-                <span className="text-xs text-gray-500">共 {statistics.total} 条日志</span>
+                <h3 className="text-sm font-semibold text-gray-900">{t("logs.logStatistics")}</h3>
+                <span className="text-xs text-gray-500">{t("logs.totalLogsCount", { total: statistics.total })}</span>
               </div>
 
               <div className="space-y-3">
@@ -585,16 +587,16 @@ export default function Logs() {
       >
         {loading ? (
           <div className="flex items-center justify-center h-full text-gray-500">
-            加载中...
+            {t("config.loading")}
           </div>
         ) : filteredLogs.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title={searchQuery ? "没有匹配的日志" : "暂无日志"}
+            title={searchQuery ? t("logs.noMatchingLogs") : t("logs.noLogs")}
             description={
               searchQuery
-                ? "尝试使用不同的关键词搜索"
-                : "启动 nanobot 后，日志将在这里显示"
+                ? t("logs.tryDifferentKeywords")
+                : t("logs.startNanobotForLogs")
             }
           />
         ) : (
@@ -615,14 +617,14 @@ export default function Logs() {
       <div className="bg-white border-t border-gray-200 px-4 py-2 flex items-center justify-between text-sm text-gray-500">
         <span>
           {searchQuery
-            ? `显示 ${filteredLogs.length} / ${logs.length} 行日志`
-            : `${logs.length} 行日志`}
+            ? t("logs.displayLogs", { filtered: filteredLogs.length, total: logs.length })
+            : t("logs.totalLogs", { total: logs.length })}
         </span>
         <span>
           {streaming ? (
-            <span className="text-green-600">● 实时监控中</span>
+            <span className="text-green-600">● {t("logs.realtimeMonitoring")}</span>
           ) : (
-            <span className="text-amber-600">● 已暂停</span>
+            <span className="text-amber-600">● {t("logs.paused")}</span>
           )}
         </span>
       </div>

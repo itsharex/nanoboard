@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ShortcutItem {
   keys: string[];
@@ -14,12 +15,14 @@ export default function KeyboardShortcutsHelp({
   shortcuts,
   onClose,
 }: KeyboardShortcutsHelpProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
         {/* 头部 */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">键盘快捷键</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t("keyboardShortcuts.title")}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
