@@ -25,3 +25,11 @@ chrono = "0.4"
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"     # 减少二进制文件大小
+strip = true        # 自动剥离调试符号
+lto = true          # 链接时优化
+codegen-units = 1   # 更好的优化，但编译时间更长
+opt-level = "z"      # 优化二进制文件大小
+overflow-checks = false

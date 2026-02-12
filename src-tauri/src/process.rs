@@ -6,11 +6,106 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use sysinfo::System;
 use tauri::State;
+use std::sync::Mutex;
 
 use crate::AppState;
+
+// Windows 上不再需要 windows API 导入
+
+// 缓存磁盘信息，避免频繁调用 PowerShell
+struct DiskInfoCache {
+    data: Option<(u64, u64)>,  // (total, available)
+    last_update: Option<Instant>,
+}
+
+impl DiskInfoCache {
+    fn new() -> Self {
+        Self {
+            data: None,
+            last_update: None,
+        }
+    }
+
+    fn get(&mut self) -> (u64, u64) {
+        const CACHE_DURATION: Duration = Duration::from_secs(5);
+
+        if let Some(last_update) = self.last_update {
+            if last_update.elapsed() < CACHE_DURATION {
+                if let Some(data) = self.data {
+                    return data;
+                }
+            }
+        }
+
+        // 缓存过期或为空，重新获取
+        let data = get_disk_usage();
+        self.data = Some(data);
+        self.last_update = Some(Instant::now());
+        data
+    }
+}
+
+// 全局磁盘信息缓存
+static DISK_CACHE: Mutex<Option<DiskInfoCache>> = Mutex::new(None);
+
+fn get_cached_disk_usage() -> (u64, u64) {
+    let mut cache = DISK_CACHE.lock().unwrap();
+    if cache.is_none() {
+        *cache = Some(DiskInfoCache::new());
+    }
+    cache.as_mut().unwrap().get()
+}
+
+// 进程检查缓存，避免频繁刷新进程列表
+struct ProcessCheckCache {
+    is_running: Option<bool>,
+    last_update: Option<Instant>,
+}
+
+impl ProcessCheckCache {
+    fn new() -> Self {
+        Self {
+            is_running: None,
+            last_update: None,
+        }
+    }
+
+    fn get(&mut self) -> bool {
+        const CACHE_DURATION: Duration = Duration::from_secs(2);
+
+        if let Some(last_update) = self.last_update {
+            if last_update.elapsed() < CACHE_DURATION {
+                if let Some(result) = self.is_running {
+                    return result;
+                }
+            }
+        }
+
+        // 缓存过期或为空，重新检查
+        let result = check_nanobot_running_impl();
+        self.is_running = Some(result);
+        self.last_update = Some(Instant::now());
+        result
+    }
+
+    fn invalidate(&mut self) {
+        self.is_running = None;
+        self.last_update = None;
+    }
+}
+
+static PROCESS_CACHE: Mutex<Option<ProcessCheckCache>> = Mutex::new(None);
+
+fn get_cached_nanobot_status() -> bool {
+    let mut cache = PROCESS_CACHE.lock().unwrap();
+    if cache.is_none() {
+        *cache = Some(ProcessCheckCache::new());
+    }
+    cache.as_mut().unwrap().get()
+}
 
 /// 为命令设置隐藏窗口（仅 Windows）
 /// 在其他平台上不执行任何操作
@@ -295,8 +390,8 @@ impl ProcessManager {
     }
 }
 
-/// 检查nanobot进程是否正在运行
-fn check_nanobot_running() -> bool {
+/// 检查nanobot进程是否正在运行（内部实现）
+fn check_nanobot_running_impl() -> bool {
     let mut sys = System::new_all();
     sys.refresh_all();
 
@@ -314,10 +409,23 @@ fn check_nanobot_running() -> bool {
     false
 }
 
+/// 检查nanobot进程是否正在运行（带缓存）
+fn check_nanobot_running() -> bool {
+    get_cached_nanobot_status()
+}
+
 /// 启动nanobot
 #[tauri::command]
 pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Result<serde_json::Value, String> {
     let port = port.unwrap_or(18790);
+
+    // 使缓存失效，重新检查状态
+    {
+        let mut cache = PROCESS_CACHE.lock().unwrap();
+        if let Some(c) = cache.as_mut() {
+            c.invalidate();
+        }
+    }
 
     // 检查是否已经在运行
     if check_nanobot_running() {
@@ -354,8 +462,10 @@ pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Res
     log::info!("找到 nanobot 命令: {}", nanobot_cmd);
 
     // 先用测试模式运行来捕获错误信息
-    let test_output = Command::new(&nanobot_cmd)
+    let test_output = apply_hidden_window(Command::new(&nanobot_cmd))
         .args(&["--help"])
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .output();
 
     match test_output {
@@ -384,8 +494,10 @@ pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Res
         .map_err(|e| format!("无法打开日志文件: {}", e))?;
 
     // 启动 nanobot gateway，先捕获 stderr 以便调试
-    let mut child = match Command::new(&nanobot_cmd)
+    let mut child = match apply_hidden_window(Command::new(&nanobot_cmd))
         .args(&["gateway", "--port", &port.to_string()])
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .stdout(Stdio::from(log_file.try_clone().unwrap()))
         .stderr(Stdio::piped())  // 先用 piped 捕获错误信息
         .spawn()
@@ -438,8 +550,10 @@ pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Res
     let _ = child.wait();
 
     // 真正启动 nanobot，将所有输出都重定向到日志文件
-    let mut child = match Command::new(&nanobot_cmd)
+    let mut child = match apply_hidden_window(Command::new(&nanobot_cmd))
         .args(&["gateway", "--port", &port.to_string()])
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .stdout(Stdio::from(log_file.try_clone().unwrap()))
         .stderr(Stdio::from(log_file))
         .spawn()
@@ -500,6 +614,14 @@ pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Res
 /// 停止nanobot
 #[tauri::command]
 pub async fn stop_nanobot(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    // 使缓存失效
+    {
+        let mut cache = PROCESS_CACHE.lock().unwrap();
+        if let Some(c) = cache.as_mut() {
+            c.invalidate();
+        }
+    }
+
     if !check_nanobot_running() {
         return Ok(json!({
             "status": "not_running",
@@ -547,7 +669,20 @@ pub async fn stop_nanobot(state: State<'_, AppState>) -> Result<serde_json::Valu
 /// 获取nanobot状态
 #[tauri::command]
 pub async fn get_status(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
-    // 实时检查进程是否在运行
+    // 实时检查进程是否在运行（不需要缓存，因为需要准确状态）
+    // 但我们可以使用较短的有效期来减少刷新
+    {
+        let mut cache = PROCESS_CACHE.lock().unwrap();
+        if let Some(c) = cache.as_mut() {
+            // 如果缓存超过 1 秒，使缓存失效
+            if let Some(last_update) = c.last_update {
+                if last_update.elapsed() > Duration::from_secs(1) {
+                    c.invalidate();
+                }
+            }
+        }
+    }
+
     let running = check_nanobot_running();
 
     // 如果进程实际在运行，但状态管理器中没有记录，需要更新状态
@@ -814,17 +949,45 @@ pub async fn download_nanobot_with_uv() -> Result<serde_json::Value, String> {
 /// 初始化nanobot
 #[tauri::command]
 pub async fn onboard_nanobot() -> Result<serde_json::Value, String> {
-    // 查找 nanobot 命令
-    let nanobot_cmd = find_command("nanobot")
-        .or_else(|| Some("nanobot".to_string()))
-        .unwrap();
+    // 在 Windows 上，需要使用 Python 来运行 nanobot 模块，并强制 UTF-8 模式
+    #[cfg(target_os = "windows")]
+    let output = {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-    // 使用 nanobot onboard 命令初始化
-    let output = apply_hidden_window(Command::new(&nanobot_cmd))
-        .args(&["onboard"])
-        .output()
-        .context("执行nanobot onboard失败")
-        .map_err(|e| e.to_string())?;
+        // 查找 Python 可执行文件
+        let python_cmd = find_via_which("python")
+            .or_else(|| find_via_which("python3"))
+            .or_else(|| find_via_which("py"))
+            .unwrap_or_else(|| "python".to_string());
+
+        log::info!("使用 Python 执行 onboard: {}", python_cmd);
+
+        // 使用 -X utf8 强制 Python 使用 UTF-8 模式
+        // 这样可以避免 Rich 库检测到 Windows 控制台后使用 GBK 编码
+        Command::new(&python_cmd)
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(&["-X", "utf8", "-m", "nanobot", "onboard"])
+            .env("PYTHONUTF8", "1")
+            .env("PYTHONIOENCODING", "utf-8")
+            .output()
+            .context("执行 nanobot onboard 失败")
+            .map_err(|e| e.to_string())?
+    };
+
+    #[cfg(not(target_os = "windows"))]
+    let output = {
+        let nanobot_cmd = find_command("nanobot")
+            .or_else(|| Some("nanobot".to_string()))
+            .unwrap();
+
+        Command::new(&nanobot_cmd)
+            .args(&["onboard"])
+            .env("PYTHONIOENCODING", "utf-8")
+            .output()
+            .context("执行 nanobot onboard 失败")
+            .map_err(|e| e.to_string())?
+    };
 
     if output.status.success() {
         Ok(json!({
@@ -872,8 +1035,8 @@ pub async fn get_system_info() -> Result<serde_json::Value, String> {
         }
     }
 
-    // 获取磁盘使用情况（平台特定）
-    let (total_disk, available_disk) = get_disk_usage();
+    // 获取磁盘使用情况（使用缓存避免频繁调用 PowerShell）
+    let (total_disk, available_disk) = get_cached_disk_usage();
     let used_disk = total_disk.saturating_sub(available_disk);
     let disk_usage_percent = if total_disk > 0 {
         (used_disk as f64 / total_disk as f64) * 100.0
@@ -963,36 +1126,8 @@ fn get_disk_usage() -> (u64, u64) {
 
 #[cfg(target_os = "windows")]
 fn get_disk_usage() -> (u64, u64) {
-    use std::process::Command;
-    use std::os::windows::process::CommandExt;
-
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-    // Windows 使用 PowerShell 获取 C 盘信息
-    // 使用 ConvertTo-Json 获取 JSON 格式输出，更可靠
-    if let Ok(output) = Command::new("powershell")
-        .args(&[
-            "-WindowStyle",
-            "Hidden",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            "Get-PSDrive C | Where-Object {$_.DriveType -eq 3} | Select-Object -Property Size,FreeSpace | ConvertTo-Json",
-        ])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-    {
-        let content = String::from_utf8_lossy(&output.stdout);
-        // PowerShell 输出 JSON 格式
-        if let Ok(json) = content.trim().parse::<serde_json::Value>() {
-            if let Some(obj) = json.as_object() {
-                let total = obj.get("Size").and_then(|v| v.as_u64()).unwrap_or(0);
-                let free = obj.get("FreeSpace").and_then(|v| v.as_u64()).unwrap_or(0);
-                return (total, free);
-            }
-        }
-    }
-    // 失败时返回 0，避免解析错误
+    // Windows 上跳过磁盘监控，避免性能问题
+    // 返回 0 表示未获取到数据
     (0, 0)
 }
 
@@ -1065,6 +1200,8 @@ pub async fn get_nanobot_version() -> Result<serde_json::Value, String> {
 
     let output = Command::new(&nanobot_cmd)
         .arg("--version")
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .output()
         .context("执行nanobot --version失败，请确保已正确安装nanobot")
         .map_err(|e| e.to_string())?;
@@ -1295,6 +1432,8 @@ fn check_nanobot_installation() -> DiagnosticCheck {
         // 尝试运行 --version
         let output = Command::new(&path)
             .arg("--version")
+            .env("PYTHONUTF8", "1")
+            .env("PYTHONIOENCODING", "utf-8")
             .output();
 
         match output {
@@ -1349,6 +1488,8 @@ fn check_nanobot_usable() -> DiagnosticCheck {
         // 尝试运行 --version 来验证可用性
         let output = Command::new(&path)
             .arg("--version")
+            .env("PYTHONUTF8", "1")
+            .env("PYTHONIOENCODING", "utf-8")
             .output();
 
         match output {

@@ -370,6 +370,14 @@ const CHANNELS_CONFIG: Array<{
       { name: "allowFrom", label: "允许的发件人", type: "text", placeholder: "留空允许所有人，或输入邮箱，用逗号分隔" },
     ],
   },
+  {
+    key: "terminal",
+    name: "终端",
+    difficulty: "无需配置",
+    description: "本地终端交互，建议保持开启",
+    colorClass: "bg-gray-50 text-gray-600",
+    fields: [],
+  },
 ];
 
 export default function ConfigEditor() {
@@ -1367,7 +1375,7 @@ export default function ConfigEditor() {
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 mb-3">选择要配置的消息渠道：</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {CHANNELS_CONFIG.filter(channel => channel.key !== "terminal").map((channel) => {
+                  {CHANNELS_CONFIG.map((channel) => {
                     const isEnabled = config.channels?.[channel.key]?.enabled || false;
                     return (
                       <div

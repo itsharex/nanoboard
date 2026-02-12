@@ -257,8 +257,9 @@ pub async fn start_log_stream(
         }
 
         // 同时使用轮询作为备选方案，防止 watcher 漏掉某些事件
+        // 减少轮询频率以降低 CPU 使用率（从 500ms 增加到 2000ms）
         loop {
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(Duration::from_millis(2000)).await;
 
             // 定期检查文件大小是否有变化
             if let Ok(metadata) = std::fs::metadata(&log_path_for_poll) {

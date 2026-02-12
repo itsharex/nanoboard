@@ -404,25 +404,32 @@ export default function Dashboard() {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mb-3">LLM Provider</p>
-              {config.providers && Object.keys(config.providers).length > 0 ? (
-                <div className="space-y-2">
-                  {Object.keys(config.providers).slice(0, 4).map((providerKey) => (
-                    <div key={providerKey} className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600">{providerKey}</span>
-                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                        已配置
-                      </span>
-                    </div>
-                  ))}
-                  {Object.keys(config.providers).length > 4 && (
-                    <p className="text-xs text-gray-500">
-                      共 {Object.keys(config.providers).length} 个 Provider
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500">暂无配置</p>
-              )}
+              {(() => {
+                const configuredProviders = config.providers
+                  ? Object.entries(config.providers).filter(
+                      ([_, p]) => p && p.apiKey && String(p.apiKey).trim() !== ""
+                    )
+                  : [];
+                return configuredProviders.length > 0 ? (
+                  <div className="space-y-2">
+                    {configuredProviders.slice(0, 4).map(([providerKey]) => (
+                      <div key={providerKey} className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">{providerKey}</span>
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                          已配置
+                        </span>
+                      </div>
+                    ))}
+                    {configuredProviders.length > 4 && (
+                      <p className="text-xs text-gray-500">
+                        共 {configuredProviders.length} 个 Provider
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">暂无配置</p>
+                );
+              })()}
             </div>
 
             {/* Agent 配置 */}

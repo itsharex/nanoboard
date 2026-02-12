@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::State;
 
 #[derive(Clone, serde::Serialize)]
@@ -72,64 +73,58 @@ fn get_network_stats_impl() -> (u64, u64) {
 
 #[cfg(target_os = "windows")]
 fn get_network_stats_impl() -> (u64, u64) {
-    use std::process::Command;
-    use std::os::windows::process::CommandExt;
-
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-    // Windows 使用 Get-NetAdapterStatistics 获取网络适配器统计
-    // 获取主要网络接口的接收和发送字节数
-    if let Ok(output) = Command::new("powershell")
-        .args(&[
-            "-WindowStyle",
-            "Hidden",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            "Get-NetAdapterStatistics | Select-Object -First 1 -Property ReceivedBytes,SentBytes | ConvertTo-Json",
-        ])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output()
-    {
-        let content = String::from_utf8_lossy(&output.stdout);
-        // PowerShell 输出 JSON 格式
-        if let Ok(json) = content.trim().parse::<serde_json::Value>() {
-            if let Some(obj) = json.as_object() {
-                let received = obj.get("ReceivedBytes").and_then(|v| v.as_u64()).unwrap_or(0);
-                let sent = obj.get("SentBytes").and_then(|v| v.as_u64()).unwrap_or(0);
-                return (received, sent);
-            }
-        }
-    }
-    // 失败时返回 (0, 0)，避免错误传播
+    // Windows 上跳过网络监控，避免性能问题
+    // 返回 0 表示未获取到数据
     (0, 0)
 }
 
 pub struct NetworkMonitor {
     last_received: u64,
     last_transmitted: u64,
+    last_update: Option<Instant>,
 }
 
 impl NetworkMonitor {
+    // 最小更新间隔，避免频繁调用 PowerShell
+    const MIN_UPDATE_INTERVAL: Duration = Duration::from_millis(1000);
+
     pub fn new() -> Self {
         let (total_received, total_transmitted) = get_network_stats_impl();
 
         Self {
             last_received: total_received,
             last_transmitted: total_transmitted,
+            last_update: Some(Instant::now()),
         }
     }
 
     pub fn get_stats(&mut self) -> NetworkStats {
+        // 检查是否到了更新时间
+        let should_update = match self.last_update {
+            Some(last) => last.elapsed() >= Self::MIN_UPDATE_INTERVAL,
+            None => true,
+        };
+
+        if !should_update {
+            // 返回速度为 0 的统计数据（使用缓存的总量）
+            return NetworkStats {
+                upload_speed: 0,
+                download_speed: 0,
+                total_upload: self.last_transmitted,
+                total_download: self.last_received,
+            };
+        }
+
         let (total_received, total_transmitted) = get_network_stats_impl();
 
         // 计算差值得到速度（字节/秒）
         let download_speed = total_received.saturating_sub(self.last_received);
         let upload_speed = total_transmitted.saturating_sub(self.last_transmitted);
 
-        // 更新上次值
+        // 更新上次值和时间
         self.last_received = total_received;
         self.last_transmitted = total_transmitted;
+        self.last_update = Some(Instant::now());
 
         NetworkStats {
             upload_speed,
