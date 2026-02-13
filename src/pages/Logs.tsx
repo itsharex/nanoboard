@@ -17,6 +17,14 @@ interface LogStatistics {
   errorPercent: number;
 }
 
+// 日志级别匹配模式（统一管理避免重复）
+const LOG_LEVEL_PATTERNS = {
+  debug: /\|\s*DEBUG\s*\|/i,
+  info: /\|\s*INFO\s*\|/i,
+  warn: /\|\s*WARNING\s*\|/i,
+  error: /\|\s*ERROR\s*\|/i,
+} as const;
+
 export default function Logs() {
   const { t } = useTranslation();
   const [logs, setLogs] = useState<string[]>([]);
@@ -119,13 +127,7 @@ export default function Logs() {
     }
 
     if (logLevel !== "all") {
-      const levelPatterns = {
-        debug: /\|\s*DEBUG\s*\|/i,
-        info: /\|\s*INFO\s*\|/i,
-        warn: /\|\s*WARNING\s*\|/i,
-        error: /\|\s*ERROR\s*\|/i,
-      };
-      filtered = filtered.filter((log) => levelPatterns[logLevel].test(log));
+      filtered = filtered.filter((log) => LOG_LEVEL_PATTERNS[logLevel].test(log));
     }
 
     setFilteredLogs(filtered);
@@ -146,12 +148,11 @@ export default function Logs() {
     let error = 0;
 
     logsToAnalyze.forEach((log) => {
-      // 匹配格式: "YYYY-MM-DD HH:MM:SS.mmm | INFO     | module:function:line - message"
-      // 或者其他包含日志级别的格式
-      if (/\|\s*DEBUG\s*\|/i.test(log)) debug++;
-      else if (/\|\s*INFO\s*\|/i.test(log)) info++;
-      else if (/\|\s*WARNING\s*\|/i.test(log) || /\|\s*WARN\s*\|/i.test(log)) warn++;
-      else if (/\|\s*ERROR\s*\|/i.test(log)) error++;
+      // 使用统一的日志级别匹配模式
+      if (LOG_LEVEL_PATTERNS.debug.test(log)) debug++;
+      else if (LOG_LEVEL_PATTERNS.info.test(log)) info++;
+      else if (LOG_LEVEL_PATTERNS.warn.test(log)) warn++;
+      else if (LOG_LEVEL_PATTERNS.error.test(log)) error++;
     });
 
     return {
@@ -212,13 +213,7 @@ export default function Logs() {
 
     // 应用级别过滤
     if (level !== "all") {
-      const levelPatterns = {
-        debug: /\|\s*DEBUG\s*\|/i,
-        info: /\|\s*INFO\s*\|/i,
-        warn: /\|\s*WARNING\s*\|/i,
-        error: /\|\s*ERROR\s*\|/i,
-      };
-      filtered = filtered.filter((log) => levelPatterns[level].test(log));
+      filtered = filtered.filter((log) => LOG_LEVEL_PATTERNS[level].test(log));
     }
 
     setFilteredLogs(filtered);

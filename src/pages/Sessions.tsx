@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { fsApi } from "../lib/tauri";
+import { fsApi, sessionApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
 import {
   FileText,
@@ -14,6 +14,7 @@ import {
   X,
   File,
   HardDrive,
+  Upload,
 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -59,6 +60,10 @@ export default function Sessions() {
     item: FsItem | null;
     newName: string;
   }>({ isOpen: false, item: null, newName: "" });
+
+  // 文件上传
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const toast = useToast();
 
@@ -206,6 +211,42 @@ export default function Sessions() {
     }
   }
 
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setUploadingFile(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        if (content) {
+          const result = await sessionApi.saveWorkspaceFile(file.name, content);
+          if (result.success) {
+            toast.showSuccess(t("sessions.uploadSuccess"));
+            await loadDirectory(currentPath);
+          } else {
+            toast.showError(result.message || t("sessions.uploadFailed"));
+          }
+        }
+      };
+      reader.onerror = () => {
+        toast.showError(t("sessions.uploadFailed"));
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      toast.showError(t("sessions.uploadFailed"));
+    } finally {
+      setUploadingFile(false);
+      // 重置文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
   function formatTimestamp(timestamp: number): string {
     if (!timestamp) return t("sessions.unknown");
     const date = new Date(timestamp * 1000);
@@ -302,15 +343,32 @@ export default function Sessions() {
               ))}
             </div>
 
-            {/* 搜索框 */}
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {/* 搜索框和上传按钮 */}
+            <div className="relative w-64 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={t("sessions.searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+                className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                title={t("sessions.uploadFile")}
+              >
+                <Upload className={`w-4 h-4 ${uploadingFile ? 'animate-pulse' : ''}`} />
+              </button>
               <input
-                type="text"
-                placeholder={t("sessions.searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileUpload}
+                className="hidden"
+                accept=".txt,.md,.json,.js,.ts,.py,.yaml,.yml"
               />
             </div>
           </div>

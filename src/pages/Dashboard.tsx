@@ -432,8 +432,8 @@ export default function Dashboard() {
                     )
                   : [];
                 return configuredProviders.length > 0 ? (
-                  <div className="space-y-2">
-                    {configuredProviders.slice(0, 4).map(([providerKey]) => (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {configuredProviders.map(([providerKey]) => (
                       <div key={providerKey} className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">{providerKey}</span>
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
@@ -441,11 +441,6 @@ export default function Dashboard() {
                         </span>
                       </div>
                     ))}
-                    {configuredProviders.length > 4 && (
-                      <p className="text-xs text-gray-500">
-                        {t("dashboard.totalProviders", { count: configuredProviders.length })}
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">{t("dashboard.noConfiguration")}</p>
