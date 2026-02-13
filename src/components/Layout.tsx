@@ -149,7 +149,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="p-6 border-b border-gray-200 dark:border-dark-border-subtle">
             <div className="flex flex-col items-center gap-3">
               {/* Logo 统一浅灰色背景 */}
-              <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-bg-sidebar dark:to-dark-bg-hover rounded-2xl shadow-sm transition-all duration-200">
+              <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-sm transition-all duration-200">
                 <img
                   src="/assets/logo.png"
                   alt={t("layout.logoAlt")}
