@@ -1,5 +1,5 @@
 /**
- * Dashboard 页面类型定义
+ * Dashboard 相关类型定义
  */
 
 export interface Status {
@@ -55,7 +55,7 @@ export interface NetworkData {
   download: number;
 }
 
-export interface Config {
+export interface DashboardConfig {
   providers?: Record<string, any>;
   agents?: {
     defaults?: {

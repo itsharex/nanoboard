@@ -4,10 +4,10 @@
 
 import { useTranslation } from "react-i18next";
 import { Server, Bot, MessageSquare } from "lucide-react";
-import type { Config } from "@/pages/dashboard/types";
+import type { DashboardConfig } from "@/types/dashboard";
 
 interface ConfigOverviewCardsProps {
-  config: Config | null;
+  config: DashboardConfig | null;
 }
 
 export default function ConfigOverviewCards({ config }: ConfigOverviewCardsProps) {

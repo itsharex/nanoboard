@@ -10,9 +10,9 @@ import type {
   NanobotVersion,
   LogStatistics,
   NetworkData,
-  Config,
+  DashboardConfig,
   DiagnosisResult,
-} from "@/pages/dashboard/types";
+} from "@/types/dashboard";
 
 // 导入组件
 import StatusCards from "@/components/dashboard/StatusCards";
@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [nanobotVersion, setNanobotVersion] = useState<NanobotVersion | null>(null);
   const [nanobotPath, setNanobotPath] = useState<string | null>(null);
-  const [config, setConfig] = useState<Config | null>(null);
+  const [config, setConfig] = useState<DashboardConfig | null>(null);
   const [logStatistics, setLogStatistics] = useState<LogStatistics | null>(null);
   const [networkData, setNetworkData] = useState<NetworkData[]>([]);
   const [diagnosing, setDiagnosing] = useState(false);

@@ -13,7 +13,7 @@ import {
   FileText,
   Bot,
 } from "lucide-react";
-import type { DiagnosisResult } from "@/pages/dashboard/types";
+import type { DiagnosisResult } from "@/types/dashboard";
 
 interface SystemInfoSectionProps {
   nanobotPath: string | null;

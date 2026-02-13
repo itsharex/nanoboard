@@ -5,7 +5,7 @@
 import { useTranslation } from "react-i18next";
 import { Activity, Cpu, HardDrive, Database, TrendingUp, FileText } from "lucide-react";
 import NetworkMonitor from "@/components/NetworkMonitor";
-import type { SystemInfo, LogStatistics, NetworkData } from "@/pages/dashboard/types";
+import type { SystemInfo, LogStatistics, NetworkData } from "@/types/dashboard";
 
 interface SystemResourceCardsProps {
   systemInfo: SystemInfo | null;

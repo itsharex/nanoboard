@@ -4,7 +4,7 @@
 
 import { useTranslation } from "react-i18next";
 import { Activity, Zap, Clock, Info } from "lucide-react";
-import type { Status, NanobotVersion } from "@/pages/dashboard/types";
+import type { Status, NanobotVersion } from "@/types/dashboard";
 
 interface StatusCardsProps {
   status: Status;
