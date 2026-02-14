@@ -18,15 +18,10 @@
 
 ## 特性
 
-- **仪表盘** - 实时监控 Nanobot 运行状态和系统资源
-- **会话** - 查看多渠道聊天会话记录，支持 Markdown 渲染
-- **日志** - 实时查看和过滤应用日志
-- **工作区** - 查看、编辑和管理工作区文件
-- **技能** - 开关、编辑，可视化管理 Nanobot 技能
-- **记忆** - 查看、编辑和删除 Nanobot 记忆
-- **定时任务** - 管理 Nanobot Cron Jobs，支持启用/禁用
-- **设置** - 使用 Monaco Editor 可视化编辑配置文件
-- **轻量化** - 基于 Tauri 构建，性能优越且资源占用极低
+- **可视化** - 从配置文件到系统资源，从会话记录到技能记忆，可视化 nanobot 的一切！
+- **便利化** - 远离复杂的命令行操作，用直观的界面来管理和监控，让一切变得简单又高效！
+- **通用化** - 无论你是 Windows、Mac 或 Linux，都能完美支持，真正做到无缝跨平台！
+- **轻量化** - Rust + Tauri 构建，性能优越并且资源占用极低，用 nano 的方式构建！
 
 ## 演示
 
@@ -35,48 +30,48 @@
 <table>
   <tr>
     <td align="center">
-      <img src="public/screenshots/dashboard.png" alt="仪表盘" width="300"/>
+      仪表盘<img src="public/screenshots/dashboard.png" alt="仪表盘" width="400"/>
       <br/>
       监控状态·系统资源
     </td>
     <td align="center">
-      <img src="public/screenshots/sessions.png" alt="会话" width="300"/>
+      会话<img src="public/screenshots/sessions.png" alt="会话" width="400"/>
       <br/>
       多渠道会话·Markdown渲染
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/logs.png" alt="日志" width="300"/>
+      日志<img src="public/screenshots/logs.png" alt="日志" width="400"/>
       <br/>
       实时查看·过滤日志
     </td>
     <td align="center">
-      <img src="public/screenshots/workspace.png" alt="工作区" width="300"/>
+      工作区<img src="public/screenshots/workspace.png" alt="工作区" width="400"/>
       <br/>
       查看会话·管理文件
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/skills.png" alt="技能" width="300"/>
+      技能<img src="public/screenshots/skills.png" alt="技能" width="400"/>
       <br/>
       可视化管理·一键开关
     </td>
     <td align="center">
-      <img src="public/screenshots/memory.png" alt="记忆" width="300"/>
+      记忆<img src="public/screenshots/memory.png" alt="记忆" width="400"/>
       <br/>
       记忆管理·编辑删除
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/cron.png" alt="定时任务" width="300"/>
+      定时任务<img src="public/screenshots/cron.png" alt="定时任务" width="400"/>
       <br/>
       定时任务·自动执行
     </td>
     <td align="center">
-      <img src="public/screenshots/settings.png" alt="设置" width="300"/>
+      设置<img src="public/screenshots/settings.png" alt="设置" width="400"/>
       <br/>
       可视化配置·快速编辑
     </td>

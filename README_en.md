@@ -18,15 +18,10 @@ English | **[简体中文](README.md)**
 
 ## Features
 
-- **Dashboard** - Real-time monitoring of Nanobot status and system resources
-- **Sessions** - View multi-channel chat session records with Markdown rendering
-- **Logs** - Real-time viewing and filtering of application logs
-- **Workspace** - View, edit, and manage workspace files
-- **Skills** - Enable/disable, edit, and visually manage Nanobot skills
-- **Memory** - View, edit, and delete Nanobot memories
-- **Cron** - Manage Nanobot scheduled cron jobs with enable/disable support
-- **Settings** - Visual configuration file editing with Monaco Editor
-- **Lightweight** - Built with Tauri for superior performance and super low resource usage
+- **Visualization** - Visualize everything about your nanobot! From config files to system resources, from session logs to skills and memory, nanoboard provides an intuitive interface to manage and monitor your nanobot.
+- **Convenience** - Say goodbye to complex command-line operations. With nanoboard's user-friendly interface, managing and monitoring your nanobot becomes simple and efficient, allowing you to focus on what matters most!
+- **Cross-platform** - Whether you're on Windows, Mac, or Linux, nanoboard has you covered with seamless cross-platform support, ensuring a consistent experience across all your devices!
+- **Lightweight** - Built with Rust + Tauri, nanoboard offers excellent performance with minimal resource usage, embodying the nano philosophy in its design!
 
 ## Screenshots
 
@@ -35,48 +30,48 @@ English | **[简体中文](README.md)**
 <table>
   <tr>
     <td align="center">
-      <img src="public/screenshots/dashboard.png" alt="Dashboard" width="300"/>
+      Dashboard<img src="public/screenshots/dashboard.png" alt="Dashboard" width="400"/>
       <br/>
       Status Monitoring·System Resources
     </td>
     <td align="center">
-      <img src="public/screenshots/sessions.png" alt="Sessions" width="300"/>
+      Sessions<img src="public/screenshots/sessions.png" alt="Sessions" width="400"/>
       <br/>
       Multi-channel·Markdown Rendering
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/logs.png" alt="Logs" width="300"/>
+      Logs<img src="public/screenshots/logs.png" alt="Logs" width="400"/>
       <br/>
       Real-time Viewing·Log Filtering
     </td>
     <td align="center">
-      <img src="public/screenshots/workspace.png" alt="Workspace" width="300"/>
+      Workspace<img src="public/screenshots/workspace.png" alt="Workspace" width="400"/>
       <br/>
       View Sessions·Manage Files
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/skills.png" alt="Skills" width="300"/>
+      Skills<img src="public/screenshots/skills.png" alt="Skills" width="400"/>
       <br/>
       Visual Management·One-Click Toggle
     </td>
     <td align="center">
-      <img src="public/screenshots/memory.png" alt="Memory" width="300"/>
+      Memory<img src="public/screenshots/memory.png" alt="Memory" width="400"/>
       <br/>
       Memory Management·Edit & Delete
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/cron.png" alt="Cron" width="300"/>
+      Cron<img src="public/screenshots/cron.png" alt="Cron" width="400"/>
       <br/>
       Scheduled Cron Jobs·Auto Execution
     </td>
     <td align="center">
-      <img src="public/screenshots/settings.png" alt="Settings" width="300"/>
+      Settings<img src="public/screenshots/settings.png" alt="Settings" width="400"/>
       <br/>
       Visual Config·Quick Edit
     </td>
