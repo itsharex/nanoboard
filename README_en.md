@@ -35,48 +35,48 @@ English | **[简体中文](README.md)**
 <table>
   <tr>
     <td align="center">
-      <img src="public/screenshots/dashboard.png" alt="Dashboard"/>
+      <img src="public/screenshots/dashboard.png" alt="Dashboard" width="300"/>
       <br/>
       Status Monitoring·System Resources
     </td>
     <td align="center">
-      <img src="public/screenshots/sessions.png" alt="Sessions"/>
+      <img src="public/screenshots/sessions.png" alt="Sessions" width="300"/>
       <br/>
       Multi-channel·Markdown Rendering
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/logs.png" alt="Logs"/>
+      <img src="public/screenshots/logs.png" alt="Logs" width="300"/>
       <br/>
       Real-time Viewing·Log Filtering
     </td>
     <td align="center">
-      <img src="public/screenshots/workspace.png" alt="Workspace"/>
+      <img src="public/screenshots/workspace.png" alt="Workspace" width="300"/>
       <br/>
       View Sessions·Manage Files
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/skills.png" alt="Skills"/>
+      <img src="public/screenshots/skills.png" alt="Skills" width="300"/>
       <br/>
       Visual Management·One-Click Toggle
     </td>
     <td align="center">
-      <img src="public/screenshots/memory.png" alt="Memory"/>
+      <img src="public/screenshots/memory.png" alt="Memory" width="300"/>
       <br/>
       Memory Management·Edit & Delete
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/cron.png" alt="Cron"/>
+      <img src="public/screenshots/cron.png" alt="Cron" width="300"/>
       <br/>
       Scheduled Cron Jobs·Auto Execution
     </td>
     <td align="center">
-      <img src="public/screenshots/settings.png" alt="Settings"/>
+      <img src="public/screenshots/settings.png" alt="Settings" width="300"/>
       <br/>
       Visual Config·Quick Edit
     </td>

@@ -35,48 +35,48 @@
 <table>
   <tr>
     <td align="center">
-      <img src="public/screenshots/dashboard.png" alt="仪表盘"/>
+      <img src="public/screenshots/dashboard.png" alt="仪表盘" width="300"/>
       <br/>
       监控状态·系统资源
     </td>
     <td align="center">
-      <img src="public/screenshots/sessions.png" alt="会话"/>
+      <img src="public/screenshots/sessions.png" alt="会话" width="300"/>
       <br/>
       多渠道会话·Markdown渲染
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/logs.png" alt="日志"/>
+      <img src="public/screenshots/logs.png" alt="日志" width="300"/>
       <br/>
       实时查看·过滤日志
     </td>
     <td align="center">
-      <img src="public/screenshots/workspace.png" alt="工作区"/>
+      <img src="public/screenshots/workspace.png" alt="工作区" width="300"/>
       <br/>
       查看会话·管理文件
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/skills.png" alt="技能"/>
+      <img src="public/screenshots/skills.png" alt="技能" width="300"/>
       <br/>
       可视化管理·一键开关
     </td>
     <td align="center">
-      <img src="public/screenshots/memory.png" alt="记忆"/>
+      <img src="public/screenshots/memory.png" alt="记忆" width="300"/>
       <br/>
       记忆管理·编辑删除
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/cron.png" alt="定时任务"/>
+      <img src="public/screenshots/cron.png" alt="定时任务" width="300"/>
       <br/>
       定时任务·自动执行
     </td>
     <td align="center">
-      <img src="public/screenshots/settings.png" alt="设置"/>
+      <img src="public/screenshots/settings.png" alt="设置" width="300"/>
       <br/>
       可视化配置·快速编辑
     </td>
