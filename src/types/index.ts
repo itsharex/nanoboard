@@ -99,7 +99,7 @@ export interface NetworkStats {
   total_download: number;
 }
 
-// ============ 会话相关 ============
+// ============ 会话/记忆相关 ============
 
 export interface Session {
   id: string;
@@ -107,6 +107,9 @@ export interface Session {
   modified?: number;
   size?: number;
 }
+
+// Memory 类型别名，用于记忆管理页面
+export type Memory = Session;
 
 export interface SessionListResult {
   sessions: Session[];

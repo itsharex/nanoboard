@@ -13,13 +13,13 @@
   },
   "nav": {
     "dashboard": "仪表盘",
-    "logs": "日志监控",
-    "files": "文件管理",
-    "skills": "技能管理",
-    "memory": "记忆管理",
-    "chatSessions": "会话查看",
+    "logs": "日志",
+    "files": "工作区",
+    "skills": "技能",
+    "memory": "记忆",
+    "chatSessions": "会话",
     "cron": "定时任务",
-    "config": "编辑配置"
+    "config": "设置"
   },
   "layout": {
     "logoAlt": "Nanoboard Logo",

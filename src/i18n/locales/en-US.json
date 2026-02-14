@@ -6,12 +6,12 @@
   "nav": {
     "dashboard": "Dashboard",
     "logs": "Logs",
-    "files": "File Manager",
+    "files": "Workspace",
     "skills": "Skills",
     "memory": "Memory",
-    "chatSessions": "Chat Sessions",
-    "cron": "Cron Jobs",
-    "config": "Config"
+    "chatSessions": "Sessions",
+    "cron": "Cron",
+    "config": "Settings"
   },
   "layout": {
     "logoAlt": "Nanoboard Logo",

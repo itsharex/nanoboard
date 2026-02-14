@@ -8,6 +8,7 @@
 [![React](https://img.shields.io/badge/React-18%2B-blue.svg)](https://react.dev/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131.svg)](https://tauri.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/badge/Release-v0.2.1-blue.svg)](https://github.com/Freakz3z/nanoboard/releases)
 
 English | **[简体中文](README.md)**
 
@@ -17,13 +18,14 @@ English | **[简体中文](README.md)**
 
 ## Features
 
-- **Visual Dashboard** - Real-time monitoring of Nanobot status and system resources
-- **Log Monitor** - Real-time viewing and filtering of application logs
-- **File Manager** - View, edit, and manage workspace files
-- **Skill Management** - Enable/disable, edit, and visually manage Nanobot skills
-- **Memory Management** - View, edit, and delete Nanobot memories
-- **Cron Jobs（Experimental）** - Manage Nanobot scheduled tasks with enable/disable support
-- **Config Editor** - Visual configuration file editing with Monaco Editor
+- **Dashboard** - Real-time monitoring of Nanobot status and system resources
+- **Sessions** - View multi-channel chat session records with Markdown rendering
+- **Logs** - Real-time viewing and filtering of application logs
+- **Workspace** - View, edit, and manage workspace files
+- **Skills** - Enable/disable, edit, and visually manage Nanobot skills
+- **Memory** - View, edit, and delete Nanobot memories
+- **Cron** - Manage Nanobot scheduled cron jobs with enable/disable support
+- **Settings** - Visual configuration file editing with Monaco Editor
 - **Lightweight** - Built with Tauri for superior performance and super low resource usage
 
 ## Screenshots
@@ -38,31 +40,43 @@ English | **[简体中文](README.md)**
       Status Monitoring·System Resources
     </td>
     <td align="center">
-      <img src="public/screenshots/logs.png" alt="Log Monitor"/>
+      <img src="public/screenshots/sessions.png" alt="Sessions"/>
       <br/>
-      Real-time Viewing·Log Filtering
+      Multi-channel·Markdown Rendering
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/file-manager.png" alt="File Manager"/>
+      <img src="public/screenshots/logs.png" alt="Logs"/>
+      <br/>
+      Real-time Viewing·Log Filtering
+    </td>
+    <td align="center">
+      <img src="public/screenshots/workspace.png" alt="Workspace"/>
       <br/>
       View Sessions·Manage Files
     </td>
+  </tr>
+  <tr>
     <td align="center">
       <img src="public/screenshots/skills.png" alt="Skills"/>
       <br/>
       Visual Management·One-Click Toggle
     </td>
+    <td align="center">
+      <img src="public/screenshots/memory.png" alt="Memory"/>
+      <br/>
+      Memory Management·Edit & Delete
+    </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/cron-jobs.png" alt="Cron Jobs"/>
+      <img src="public/screenshots/cron.png" alt="Cron"/>
       <br/>
-      Scheduled Tasks·Auto Execution
+      Scheduled Cron Jobs·Auto Execution
     </td>
     <td align="center">
-      <img src="public/screenshots/config.png" alt="Config Editor"/>
+      <img src="public/screenshots/settings.png" alt="Settings"/>
       <br/>
       Visual Config·Quick Edit
     </td>
@@ -104,6 +118,10 @@ nanoboard automatically reads the following nanobot configurations:
 - **Config File**: `~/.nanobot/config.json`
 - **Log File**: `~/.nanobot/logs/nanobot.log`
 - **Workspace**: `~/.nanobot/workspace`
+- **Sessions Directory**: `~/.nanobot/sessions`
+- **Skills Directory**: `~/.nanobot/workspace/skills`
+- **Memory Directory**: `~/.nanobot/workspace/memory`
+- **Cron Directory**: `~/.nanobot/cron`
 
 ## Build
 
@@ -144,60 +162,19 @@ npm run tauri:build
 nanoboard/
 ├── src/                    # React frontend source
 │   ├── components/         # Reusable components
-│   │   ├── index.ts               # Component exports
-│   │   ├── Layout.tsx             # Main layout component
-│   │   ├── ConfirmDialog.tsx      # Confirmation dialog
-│   │   ├── EmptyState.tsx         # Empty state hint
-│   │   ├── Toast.tsx              # Toast notification
-│   │   ├── NetworkMonitor.tsx     # Network monitoring chart
-│   │   ├── ErrorBoundary.tsx      # Error boundary
-│   │   ├── config/                # Config-related components
-│   │   │   ├── ProviderEditModal.tsx  # Provider edit modal
-│   │   │   ├── ChannelEditModal.tsx   # Channel edit modal
-│   │   │   ├── HistoryPanel.tsx       # History panel
-│   │   │   └── CodeEditorView.tsx     # Code editor view
-│   │   └── dashboard/             # Dashboard components
-│   │       ├── StatusCards.tsx        # Status cards
-│   │       ├── ConfigOverviewCards.tsx # Config overview cards
-│   │       ├── SystemResourceCards.tsx # System resource cards
-│   │       └── SystemInfoSection.tsx  # System info section
 │   ├── pages/             # Page components
-│   │   ├── Dashboard.tsx          # Dashboard
-│   │   ├── ConfigEditor.tsx       # Config editor
-│   │   ├── Logs.tsx               # Log monitor
-│   │   └── FileManager.tsx        # File manager
 │   ├── config/            # Config types and data
-│   │   ├── index.ts               # Exports
-│   │   ├── types.ts               # Config type definitions
-│   │   ├── providers.ts           # Provider config data
-│   │   └── channels.ts            # Channel config data
 │   ├── types/             # Type definitions
-│   │   ├── index.ts               # Common types
-│   │   └── dashboard.ts           # Dashboard types
 │   ├── lib/               # Utility functions
-│   │   ├── tauri.ts               # Tauri API wrapper
-│   │   ├── defaultConfig.ts       # Default config
-│   │   └── utils.ts               # Utility functions
 │   ├── utils/             # Utility functions
-│   │   └── format.ts              # Format utilities
 │   ├── contexts/          # React Context
-│   │   ├── ToastContext.tsx       # Toast context
-│   │   └── ThemeContext.tsx       # Theme context
 │   ├── hooks/             # Custom Hooks
 │   ├── i18n/              # Internationalization
-│   │   └── locales/
-│   │       ├── zh-CN.json         # Simplified Chinese
-│   │       └── en-US.json         # English
 │   ├── assets/            # Static assets
 │   ├── App.tsx            # Main app component
 │   └── main.tsx           # App entry
 ├── src-tauri/             # Rust backend
-│   ├── src/
-│   │   ├── main.rs            # Main entry
-│   │   ├── config.rs          # Config management
-│   │   ├── process.rs         # Process control
-│   │   ├── logger.rs          # Log reading & monitoring
-│   │   └── session.rs         # Session management
+│   ├── src/                   # Rust source code
 │   ├── Cargo.toml             # Rust dependencies
 │   └── tauri.conf.json        # Tauri config
 ├── public/                # Public assets
@@ -218,7 +195,11 @@ nanoboard/
 - [x] Multi-language support (i18n)
 - [x] Performance monitoring charts
 - [x] Dark theme
-- [ ] Session management
+- [x] Session viewer (multi-channel messages, Markdown rendering)
+- [x] Collapsible sidebar
+- [x] Skills management (enable/disable/edit)
+- [x] Memory management (view/edit/delete)
+- [x] Cron jobs management
 - [ ] Auto-update feature
 
 ## Acknowledgments

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
-import type { Session } from "../types";
+import type { Memory as MemoryType } from "../types";
 
 interface ConfirmDialogState {
   isOpen: boolean;
@@ -25,8 +25,8 @@ interface ConfirmDialogState {
 
 export default function Memory() {
   const { t, i18n } = useTranslation();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [memories, setMemories] = useState<MemoryType[]>([]);
+  const [selectedMemory, setSelectedMemory] = useState<MemoryType | null>(null);
   const [memoryContent, setMemoryContent] = useState<string>("");
   const [editingContent, setEditingContent] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,15 +43,15 @@ export default function Memory() {
   const toast = useToast();
 
   useEffect(() => {
-    loadSessions();
+    loadMemories();
   }, []);
 
-  async function loadSessions() {
+  async function loadMemories() {
     setIsLoading(true);
     try {
       const result = await sessionApi.list();
       if (result.sessions) {
-        setSessions(result.sessions);
+        setMemories(result.sessions);
       }
     } catch (error) {
       toast.showError(t("memory.loadFailed"));
@@ -60,7 +60,7 @@ export default function Memory() {
     }
   }
 
-  async function selectSession(session: Session) {
+  async function selectMemory(memory: MemoryType) {
     if (isEditing && editingContent !== memoryContent) {
       // 提示保存更改
       if (!window.confirm(t("memory.unsavedChanges"))) {
@@ -68,11 +68,11 @@ export default function Memory() {
       }
     }
 
-    setSelectedSession(session);
+    setSelectedMemory(memory);
     setIsEditing(false);
 
     try {
-      const result = await sessionApi.getMemory(session.id);
+      const result = await sessionApi.getMemory(memory.id);
       if (result.content !== undefined) {
         setMemoryContent(result.content);
         setEditingContent(result.content);
@@ -96,15 +96,15 @@ export default function Memory() {
   }
 
   async function saveMemory() {
-    if (!selectedSession) return;
+    if (!selectedMemory) return;
 
     try {
-      const result = await sessionApi.saveMemory(selectedSession.id, editingContent);
+      const result = await sessionApi.saveMemory(selectedMemory.id, editingContent);
       if (result.success) {
         toast.showSuccess(t("memory.saved"));
         setMemoryContent(editingContent);
         setIsEditing(false);
-        await loadSessions();
+        await loadMemories();
       } else {
         toast.showError(result.message || t("memory.saveFailed"));
       }
@@ -113,23 +113,23 @@ export default function Memory() {
     }
   }
 
-  async function deleteSession(session: Session) {
+  async function deleteMemory(memory: MemoryType) {
     setConfirmDialog({
       isOpen: true,
-      title: t("memory.deleteSession"),
-      message: t("memory.deleteConfirm", { name: session.name }),
+      title: t("memory.deleteMemory"),
+      message: t("memory.deleteConfirm", { name: memory.name }),
       onConfirm: async () => {
         try {
-          const result = await sessionApi.delete(session.id);
+          const result = await sessionApi.delete(memory.id);
           if (result.success) {
             toast.showSuccess(t("memory.deleted"));
-            if (selectedSession?.id === session.id) {
-              setSelectedSession(null);
+            if (selectedMemory?.id === memory.id) {
+              setSelectedMemory(null);
               setMemoryContent("");
               setEditingContent("");
               setIsEditing(false);
             }
-            await loadSessions();
+            await loadMemories();
           } else {
             toast.showError(result.message || t("memory.deleteFailed"));
           }
@@ -173,9 +173,9 @@ export default function Memory() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
-  const filteredSessions = sessions.filter((session) => {
+  const filteredMemories = memories.filter((memory) => {
     const query = searchQuery.toLowerCase();
-    return session.name.toLowerCase().includes(query);
+    return memory.name.toLowerCase().includes(query);
   });
 
   return (
@@ -201,26 +201,26 @@ export default function Memory() {
 
       {/* 主内容区域 */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* 左侧会话列表 */}
+        {/* 左侧记忆列表 */}
         <div className="w-80 border-r border-gray-200 dark:border-dark-border-subtle flex flex-col bg-white dark:bg-dark-bg-card overflow-hidden transition-colors duration-200">
           <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1 scrollbar-thin">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
-            ) : filteredSessions.length === 0 ? (
+            ) : filteredMemories.length === 0 ? (
               <EmptyState
                 icon={searchQuery ? Search : Brain}
-                title={searchQuery ? t("memory.noMatching") : t("memory.noSessions")}
-                description={searchQuery ? t("memory.tryOther") : t("memory.noSessionsDesc")}
+                title={searchQuery ? t("memory.noMatching") : t("memory.noMemories")}
+                description={searchQuery ? t("memory.tryOther") : t("memory.noMemoriesDesc")}
               />
             ) : (
-              filteredSessions.map((session) => (
+              filteredMemories.map((memory) => (
                 <div
-                  key={session.id}
-                  onClick={() => selectSession(session)}
+                  key={memory.id}
+                  onClick={() => selectMemory(memory)}
                   className={`group flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedSession?.id === session.id
+                    selectedMemory?.id === memory.id
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                       : "border-gray-200 dark:border-dark-border-subtle hover:border-gray-300 dark:hover:border-dark-border-default hover:bg-gray-50 dark:hover:bg-dark-bg-hover"
                   }`}
@@ -230,15 +230,15 @@ export default function Memory() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-gray-900 dark:text-dark-text-primary truncate text-sm">
-                      {session.name}
+                      {memory.name}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-dark-text-muted mt-0.5">
-                      {session.size !== undefined && (
-                        <span>{formatSize(session.size)}</span>
+                      {memory.size !== undefined && (
+                        <span>{formatSize(memory.size)}</span>
                       )}
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {formatTimestamp(session.modified || 0)}
+                        {formatTimestamp(memory.modified || 0)}
                       </span>
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export default function Memory() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteSession(session);
+                        deleteMemory(memory);
                       }}
                       className="p-1.5 text-gray-400 dark:text-dark-text-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-all"
                       title={t("memory.delete")}
@@ -262,7 +262,7 @@ export default function Memory() {
 
         {/* 右侧记忆内容区域 */}
         <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-dark-bg-sidebar transition-colors duration-200">
-          {selectedSession ? (
+          {selectedMemory ? (
             <>
               {/* 头部 */}
               <div className="bg-white dark:bg-dark-bg-card border-b border-gray-200 dark:border-dark-border-subtle px-6 py-4 flex-shrink-0 transition-colors duration-200">
@@ -271,12 +271,12 @@ export default function Memory() {
                     <div className="flex items-center gap-2">
                       <Brain className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                       <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary truncate">
-                        {selectedSession.name}
+                        {selectedMemory.name}
                       </h2>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-dark-text-muted mt-1">
-                      {selectedSession.size !== undefined && `${formatSize(selectedSession.size)} · `}
-                      {formatTimestamp(selectedSession.modified || 0)}
+                      {selectedMemory.size !== undefined && `${formatSize(selectedMemory.size)} · `}
+                      {formatTimestamp(selectedMemory.modified || 0)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -332,8 +332,8 @@ export default function Memory() {
             <div className="flex-1 flex items-center justify-center">
               <EmptyState
                 icon={Brain}
-                title={t("memory.selectSession")}
-                description={t("memory.selectSessionDesc")}
+                title={t("memory.selectMemory")}
+                description={t("memory.selectMemoryDesc")}
               />
             </div>
           )}

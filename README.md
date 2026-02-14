@@ -8,6 +8,7 @@
 [![React](https://img.shields.io/badge/React-18%2B-blue.svg)](https://react.dev/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131.svg)](https://tauri.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/badge/Release-v0.2.1-blue.svg)](https://github.com/Freakz3z/nanoboard/releases)
 
 **[English](README_en.md)** | 简体中文
 
@@ -17,13 +18,14 @@
 
 ## 特性
 
-- **可视化仪表盘** - 实时监控 Nanobot 运行状态和系统资源
-- **日志监控** - 实时查看和过滤应用日志
-- **文件管理** - 查看、编辑和管理工作区文件
-- **技能管理** - 开关、编辑，可视化管理 Nanobot 技能
-- **记忆管理** - 查看、编辑和删除 Nanobot 记忆
-- **定时任务（实验功能）** - 管理 Nanobot 定时任务，支持启用/禁用
-- **配置编辑** - 使用 Monaco Editor 可视化编辑配置文件
+- **仪表盘** - 实时监控 Nanobot 运行状态和系统资源
+- **会话** - 查看多渠道聊天会话记录，支持 Markdown 渲染
+- **日志** - 实时查看和过滤应用日志
+- **工作区** - 查看、编辑和管理工作区文件
+- **技能** - 开关、编辑，可视化管理 Nanobot 技能
+- **记忆** - 查看、编辑和删除 Nanobot 记忆
+- **定时任务** - 管理 Nanobot Cron Jobs，支持启用/禁用
+- **设置** - 使用 Monaco Editor 可视化编辑配置文件
 - **轻量化** - 基于 Tauri 构建，性能优越且资源占用极低
 
 ## 演示
@@ -38,31 +40,43 @@
       监控状态·系统资源
     </td>
     <td align="center">
-      <img src="public/screenshots/logs.png" alt="日志监控"/>
+      <img src="public/screenshots/sessions.png" alt="会话"/>
       <br/>
-      实时查看·过滤应用日志
+      多渠道会话·Markdown渲染
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/file-manager.png" alt="文件管理"/>
+      <img src="public/screenshots/logs.png" alt="日志"/>
+      <br/>
+      实时查看·过滤日志
+    </td>
+    <td align="center">
+      <img src="public/screenshots/workspace.png" alt="工作区"/>
       <br/>
       查看会话·管理文件
     </td>
+  </tr>
+  <tr>
     <td align="center">
-      <img src="public/screenshots/skills.png" alt="技能管理"/>
+      <img src="public/screenshots/skills.png" alt="技能"/>
       <br/>
       可视化管理·一键开关
+    </td>
+    <td align="center">
+      <img src="public/screenshots/memory.png" alt="记忆"/>
+      <br/>
+      记忆管理·编辑删除
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="public/screenshots/cron-jobs.png" alt="定时任务"/>
+      <img src="public/screenshots/cron.png" alt="定时任务"/>
       <br/>
       定时任务·自动执行
     </td>
     <td align="center">
-      <img src="public/screenshots/config.png" alt="配置编辑器"/>
+      <img src="public/screenshots/settings.png" alt="设置"/>
       <br/>
       可视化配置·快速编辑
     </td>
@@ -104,6 +118,10 @@ nanoboard 会自动读取以下 nanobot 配置：
 - **配置文件**: `~/.nanobot/config.json`
 - **日志文件**: `~/.nanobot/logs/nanobot.log`
 - **工作区**: `~/.nanobot/workspace`
+- **会话目录**: `~/.nanobot/sessions`
+- **技能目录**: `~/.nanobot/workspace/skills`
+- **记忆目录**: `~/.nanobot/workspace/memory`
+- **定时任务目录**: `~/.nanobot/cron`
 
 ## 构建
 
@@ -144,60 +162,19 @@ npm run tauri:build
 nanoboard/
 ├── src/                    # React 前端源码
 │   ├── components/         # 可复用组件
-│   │   ├── index.ts               # 组件统一导出
-│   │   ├── Layout.tsx             # 主布局组件
-│   │   ├── ConfirmDialog.tsx      # 确认对话框
-│   │   ├── EmptyState.tsx         # 空状态提示
-│   │   ├── Toast.tsx              # 消息提示
-│   │   ├── NetworkMonitor.tsx     # 网络监控图表
-│   │   ├── ErrorBoundary.tsx      # 错误边界
-│   │   ├── config/                # 配置相关组件
-│   │   │   ├── ProviderEditModal.tsx  # Provider 编辑模态框
-│   │   │   ├── ChannelEditModal.tsx   # Channel 编辑模态框
-│   │   │   ├── HistoryPanel.tsx       # 历史记录面板
-│   │   │   └── CodeEditorView.tsx     # 代码编辑视图
-│   │   └── dashboard/             # 仪表盘相关组件
-│   │       ├── StatusCards.tsx        # 状态卡片组
-│   │       ├── ConfigOverviewCards.tsx # 配置概览卡片
-│   │       ├── SystemResourceCards.tsx # 系统资源卡片
-│   │       └── SystemInfoSection.tsx  # 系统信息区域
 │   ├── pages/             # 页面组件
-│   │   ├── Dashboard.tsx          # 仪表盘
-│   │   ├── ConfigEditor.tsx       # 配置编辑器
-│   │   ├── Logs.tsx               # 日志监控
-│   │   └── FileManager.tsx        # 文件管理
 │   ├── config/            # 配置类型和数据
-│   │   ├── index.ts               # 统一导出
-│   │   ├── types.ts               # 配置类型定义
-│   │   ├── providers.ts           # Provider 配置数据
-│   │   └── channels.ts            # Channel 配置数据
 │   ├── types/             # 类型定义
-│   │   ├── index.ts               # 通用类型
-│   │   └── dashboard.ts           # 仪表盘类型
 │   ├── lib/               # 工具函数
-│   │   ├── tauri.ts               # Tauri API 封装
-│   │   ├── defaultConfig.ts       # 默认配置
-│   │   └── utils.ts               # 通用工具函数
 │   ├── utils/             # 工具函数
-│   │   └── format.ts              # 格式化工具
 │   ├── contexts/          # React Context
-│   │   ├── ToastContext.tsx       # Toast 上下文
-│   │   └── ThemeContext.tsx       # 主题上下文
 │   ├── hooks/             # 自定义 Hooks
 │   ├── i18n/              # 国际化配置
-│   │   └── locales/
-│   │       ├── zh-CN.json         # 简体中文
-│   │       └── en-US.json         # 英文
 │   ├── assets/            # 静态资源
 │   ├── App.tsx            # 主应用组件
 │   └── main.tsx           # 应用入口
 ├── src-tauri/             # Rust 后端
-│   ├── src/
-│   │   ├── main.rs            # 主入口
-│   │   ├── config.rs          # 配置管理
-│   │   ├── process.rs         # 进程控制
-│   │   ├── logger.rs          # 日志读取与监控
-│   │   └── session.rs         # 会话管理
+│   ├── src/                   # Rust 源码    
 │   ├── Cargo.toml             # Rust 依赖配置
 │   └── tauri.conf.json        # Tauri 配置
 ├── public/                # 公共静态资源
@@ -218,7 +195,11 @@ nanoboard/
 - [x] 多语言支持（i18n）
 - [x] 性能监控图表
 - [x] 暗色主题
-- [ ] 会话管理
+- [x] 会话查看（多渠道消息、Markdown 渲染）
+- [x] 侧边栏收放
+- [x] 技能管理（启用/禁用/编辑）
+- [x] 记忆管理（查看/编辑/删除）
+- [x] 定时任务管理
 - [ ] 自动更新功能
 
 ## 致谢
