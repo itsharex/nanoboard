@@ -8,6 +8,7 @@ mod network;
 mod session;
 mod theme;
 mod menu;
+mod cron;
 
 use std::sync::Mutex;
 use std::sync::Arc;
@@ -89,7 +90,9 @@ async fn main() {
             // Skill commands
             session::list_skills,
             session::get_skill_content,
+            session::save_skill,
             session::delete_skill,
+            session::toggle_skill,
             // File system commands
             session::get_directory_tree,
             session::get_file_content,
@@ -101,6 +104,12 @@ async fn main() {
             theme::get_theme,
             theme::set_theme,
             theme::toggle_theme,
+            // Cron commands
+            cron::cron_list,
+            cron::cron_add,
+            cron::cron_remove,
+            cron::cron_enable,
+            cron::cron_run,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

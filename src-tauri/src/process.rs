@@ -63,7 +63,7 @@ fn get_cached_nanobot_status() -> bool {
 
 /// 为命令设置隐藏窗口（仅 Windows）
 /// 在其他平台上不执行任何操作
-fn apply_hidden_window(cmd: Command) -> Command {
+pub(crate) fn apply_hidden_window(cmd: Command) -> Command {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
@@ -258,7 +258,7 @@ fn find_via_pip(package: &str) -> Option<String> {
 /// 1. 使用系统 which/where 命令（最可靠，会检查当前激活的环境）
 /// 2. 通过 pip show 查找（适配 conda/venv 等虚拟环境）
 /// 3. 遍历预设的 PATH 列表（兼容旧逻辑）
-fn find_command(command: &str) -> Option<String> {
+pub(crate) fn find_command(command: &str) -> Option<String> {
     log::debug!("正在查找命令: {}", command);
 
     // 方法 1: 使用系统 which/where 命令（最可靠）

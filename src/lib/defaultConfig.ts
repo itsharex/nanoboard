@@ -76,5 +76,8 @@ export const DEFAULT_CONFIG = {
       fromAddress: "",
       allowFrom: []
     }
+  },
+  tools: {
+    restrictToWorkspace: false
   }
 };

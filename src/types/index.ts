@@ -104,14 +104,19 @@ export interface NetworkStats {
 export interface Session {
   id: string;
   name: string;
-  created_at: number;
-  updated_at: number;
-  message_count?: number;
+  modified?: number;
+  size?: number;
+}
+
+export interface SessionListResult {
+  sessions: Session[];
+  message?: string;
 }
 
 export interface SessionMemory {
+  id: string;
   content: string;
-  last_modified: number;
+  last_modified?: number;
 }
 
 export interface WorkspaceFiles {
@@ -151,19 +156,60 @@ export interface OperationResult {
 export interface Skill {
   id: string;
   name: string;
-  description?: string;
-  created_at?: number;
+  title?: string;
+  enabled: boolean;
+  modified?: number;
 }
 
 export interface SkillContent {
   success: boolean;
   content?: string;
+  name?: string;
+  id?: string;
+  message?: string;
+}
+
+export interface SkillListResult {
+  skills: Skill[];
+  message?: string;
+}
+
+export interface ToggleResult {
+  success: boolean;
+  enabled: boolean;
+  new_id?: string;
   message?: string;
 }
 
 // ============ 主题相关 ============
 
 export type Theme = 'light' | 'dark' | 'system';
+
+// ============ 定时任务相关 ============
+
+export interface CronJob {
+  id: string;
+  name: string;
+  schedule: string;
+  message: string;
+  status?: string;
+  next_run?: string;
+  channel?: string;
+  to?: string;
+  deliver?: boolean;
+}
+
+export interface CronListResult {
+  success: boolean;
+  jobs: CronJob[];
+  raw?: string;
+  message?: string;
+}
+
+export interface CronOperationResult {
+  success: boolean;
+  message?: string;
+}
 
 // ============ 通用响应 ============
 

@@ -12,6 +12,9 @@ import {
   Languages,
   Moon,
   Sun,
+  Wrench,
+  Brain,
+  CalendarClock,
 } from "lucide-react";
 import { processApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
@@ -38,6 +41,9 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/", label: t("nav.dashboard"), icon: LayoutDashboard },
     { path: "/logs", label: t("nav.logs"), icon: ScrollText },
     { path: "/files", label: t("nav.sessions"), icon: FileText },
+    { path: "/skills", label: t("nav.skills"), icon: Wrench },
+    { path: "/memory", label: t("nav.memory"), icon: Brain },
+    { path: "/cron", label: t("nav.cron"), icon: CalendarClock },
     { path: "/config", label: t("nav.config"), icon: Settings },
   ];
 

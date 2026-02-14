@@ -69,6 +69,9 @@ export interface Config {
     defaults?: AgentDefaults;
   };
   channels?: Record<string, Channel>;
+  tools?: {
+    restrictToWorkspace?: boolean;
+  };
 }
 
 export interface ConfigTemplate {

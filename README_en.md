@@ -18,11 +18,12 @@ English | **[简体中文](README.md)**
 ## Features
 
 - **Visual Dashboard** - Real-time monitoring of Nanobot status and system resources
-- **Config Editor** - Visual configuration file editing with Monaco Editor
-- **Quick Launch** - One-click start/stop Nanobot Gateway
 - **Log Monitor** - Real-time viewing and filtering of application logs
 - **File Manager** - View, edit, and manage workspace files
-- **Multi-language Support** - Chinese and English interface switching
+- **Skill Management** - Enable/disable, edit, and visually manage Nanobot skills
+- **Memory Management** - View, edit, and delete Nanobot memories
+- **Cron Jobs（Experimental）** - Manage Nanobot scheduled tasks with enable/disable support
+- **Config Editor** - Visual configuration file editing with Monaco Editor
 - **Lightweight** - Built with Tauri for superior performance and super low resource usage
 
 ## Screenshots

@@ -264,7 +264,7 @@ fn get_skills_path() -> Result<PathBuf> {
     Ok(skills_path)
 }
 
-/// 列出所有Skill
+/// 列出所有Skill（包括目录型技能和文件型技能）
 #[tauri::command]
 pub async fn list_skills() -> Result<serde_json::Value, String> {
     let skills_path = get_skills_path().map_err(|e| e.to_string())?;
@@ -278,39 +278,102 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
 
     let mut skills = Vec::new();
 
-    // 读取skills目录中的所有.md文件
+    // 读取skills目录中的所有条目
     if let Ok(entries) = fs::read_dir(&skills_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() {
-                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                    if file_name.ends_with(".md") {
-                        // 读取文件元数据
-                        if let Ok(metadata) = fs::metadata(&path) {
-                            if let Ok(modified) = metadata.modified() {
-                                // 读取文件内容的第一行作为标题
-                                let title = if let Ok(content) = fs::read_to_string(&path) {
-                                    content
-                                        .lines()
-                                        .find(|line| !line.is_empty() && line.starts_with("#"))
-                                        .unwrap_or("")
-                                        .trim_start_matches("#")
-                                        .trim()
-                                        .to_string()
-                                } else {
-                                    file_name.trim_end_matches(".md").to_string()
-                                };
 
-                                skills.push(json!({
-                                    "id": file_name,
-                                    "name": file_name.trim_end_matches(".md"),
-                                    "title": title,
-                                    "path": path.to_string_lossy(),
-                                    "modified": modified.duration_since(std::time::UNIX_EPOCH)
-                                        .unwrap_or_default()
-                                        .as_secs()
-                                }));
-                            }
+            // 情况1: 目录型技能（包含 SKILL.md 文件）
+            if path.is_dir() {
+                if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                    // 跳过隐藏目录
+                    if dir_name.starts_with(".") {
+                        continue;
+                    }
+
+                    // 检查是否有 SKILL.md 或 SKILL.md.disabled 文件
+                    let skill_file_enabled = path.join("SKILL.md");
+                    let skill_file_disabled = path.join("SKILL.md.disabled");
+
+                    let (skill_file, enabled, skill_filename) = if skill_file_enabled.exists() {
+                        (skill_file_enabled, true, "SKILL.md")
+                    } else if skill_file_disabled.exists() {
+                        (skill_file_disabled, false, "SKILL.md.disabled")
+                    } else {
+                        // 目录中没有 SKILL.md 文件，跳过
+                        continue;
+                    };
+
+                    // 读取文件元数据
+                    if let Ok(metadata) = fs::metadata(&skill_file) {
+                        if let Ok(modified) = metadata.modified() {
+                            // 读取文件内容的第一行作为标题
+                            let title = if let Ok(content) = fs::read_to_string(&skill_file) {
+                                content
+                                    .lines()
+                                    .find(|line| !line.is_empty() && line.starts_with("#"))
+                                    .unwrap_or("")
+                                    .trim_start_matches("#")
+                                    .trim()
+                                    .to_string()
+                            } else {
+                                dir_name.to_string()
+                            };
+
+                            skills.push(json!({
+                                "id": format!("{}/{}", dir_name, skill_filename),
+                                "name": dir_name,
+                                "title": title,
+                                "enabled": enabled,
+                                "type": "directory",
+                                "path": skill_file.to_string_lossy(),
+                                "modified": modified.duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_secs()
+                            }));
+                        }
+                    }
+                }
+            }
+            // 情况2: 文件型技能（顶级 .md 文件）
+            else if path.is_file() {
+                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                    // 判断是否为 Skill 文件（启用或禁用状态）
+                    let (skill_name, enabled) = if file_name.ends_with(".md.disabled") {
+                        (file_name.trim_end_matches(".md.disabled"), false)
+                    } else if file_name.ends_with(".md") {
+                        (file_name.trim_end_matches(".md"), true)
+                    } else {
+                        continue;
+                    };
+
+                    // 读取文件元数据
+                    if let Ok(metadata) = fs::metadata(&path) {
+                        if let Ok(modified) = metadata.modified() {
+                            // 读取文件内容的第一行作为标题
+                            let title = if let Ok(content) = fs::read_to_string(&path) {
+                                content
+                                    .lines()
+                                    .find(|line| !line.is_empty() && line.starts_with("#"))
+                                    .unwrap_or("")
+                                    .trim_start_matches("#")
+                                    .trim()
+                                    .to_string()
+                            } else {
+                                skill_name.to_string()
+                            };
+
+                            skills.push(json!({
+                                "id": file_name,
+                                "name": skill_name,
+                                "title": title,
+                                "enabled": enabled,
+                                "type": "file",
+                                "path": path.to_string_lossy(),
+                                "modified": modified.duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_secs()
+                            }));
                         }
                     }
                 }
@@ -346,10 +409,18 @@ pub async fn get_skill_content(skill_id: String) -> Result<serde_json::Value, St
     let content = fs::read_to_string(&skill_path)
         .map_err(|e| format!("读取Skill失败: {}", e))?;
 
+    // 提取名称（去除 .md 或 .md.disabled 后缀）
+    let name = if skill_id.ends_with(".md.disabled") {
+        skill_id.trim_end_matches(".md.disabled")
+    } else {
+        skill_id.trim_end_matches(".md")
+    };
+
     Ok(json!({
         "success": true,
         "content": content,
-        "name": skill_id.trim_end_matches(".md")
+        "name": name,
+        "id": skill_id
     }))
 }
 
@@ -372,6 +443,87 @@ pub async fn delete_skill(skill_id: String) -> Result<serde_json::Value, String>
     Ok(json!({
         "success": true,
         "message": format!("Skill {} 已删除", skill_id)
+    }))
+}
+
+/// 启用/禁用 Skill（通过重命名文件后缀）
+#[tauri::command]
+pub async fn toggle_skill(skill_id: String, enabled: bool) -> Result<serde_json::Value, String> {
+    let skills_path = get_skills_path().map_err(|e| e.to_string())?;
+
+    // 根据当前状态确定源文件和目标文件
+    let (source_path, target_path, new_id) = if skill_id.ends_with(".md.disabled") {
+        // 当前是禁用状态，要启用
+        let source = skills_path.join(&skill_id);
+        let name = skill_id.trim_end_matches(".md.disabled");
+        let target = skills_path.join(format!("{}.md", name));
+        (source, target, format!("{}.md", name))
+    } else if skill_id.ends_with(".md") {
+        // 当前是启用状态，要禁用
+        let source = skills_path.join(&skill_id);
+        let name = skill_id.trim_end_matches(".md");
+        let target = skills_path.join(format!("{}.md.disabled", name));
+        (source, target, format!("{}.md.disabled", name))
+    } else {
+        return Ok(json!({
+            "success": false,
+            "message": format!("无效的 Skill 文件名: {}", skill_id)
+        }));
+    };
+
+    if !source_path.exists() {
+        return Ok(json!({
+            "success": false,
+            "message": format!("Skill {} 不存在", skill_id)
+        }));
+    }
+
+    // 如果目标文件已存在，返回错误
+    if target_path.exists() {
+        return Ok(json!({
+            "success": false,
+            "message": format!("目标文件已存在")
+        }));
+    }
+
+    fs::rename(&source_path, &target_path)
+        .map_err(|e| format!("重命名 Skill 失败: {}", e))?;
+
+    Ok(json!({
+        "success": true,
+        "enabled": enabled,
+        "new_id": new_id,
+        "message": if enabled { "Skill 已启用" } else { "Skill 已禁用" }
+    }))
+}
+
+/// 创建/保存 Skill
+#[tauri::command]
+pub async fn save_skill(skill_id: String, content: String) -> Result<serde_json::Value, String> {
+    let skills_path = get_skills_path().map_err(|e| e.to_string())?;
+
+    // 确保 skills 目录存在
+    if !skills_path.exists() {
+        fs::create_dir_all(&skills_path)
+            .map_err(|e| format!("创建 skills 目录失败: {}", e))?;
+    }
+
+    // 确保 skill_id 以 .md 结尾
+    let skill_file = if skill_id.ends_with(".md") {
+        skill_id
+    } else {
+        format!("{}.md", skill_id)
+    };
+
+    let skill_path = skills_path.join(&skill_file);
+
+    fs::write(&skill_path, &content)
+        .map_err(|e| format!("保存 Skill 失败: {}", e))?;
+
+    Ok(json!({
+        "success": true,
+        "id": skill_file,
+        "message": format!("Skill {} 已保存", skill_file)
     }))
 }
 
@@ -434,6 +586,13 @@ pub async fn get_directory_tree(relative_path: Option<String>) -> Result<serde_j
                 // 跳过隐藏文件
                 if file_name.starts_with('.') {
                     continue;
+                }
+
+                // 在根目录级别隐藏已有专门管理页面的文件夹
+                if relative_path.as_ref().is_none_or(|p| p == "/" || p.is_empty()) {
+                    if file_name == "memory" || file_name == "skills" {
+                        continue;
+                    }
                 }
 
                 let item_type = if path.is_dir() { "directory" } else { "file" };

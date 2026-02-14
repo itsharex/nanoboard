@@ -9,6 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import ConfigEditor from "./pages/ConfigEditor";
 import Logs from "./pages/Logs";
 import FileManager from "./pages/FileManager";
+import Skills from "./pages/Skills";
+import Memory from "./pages/Memory";
+import CronJobs from "./pages/CronJobs";
 import { ContextMenu } from "./components/ContextMenu";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -76,6 +79,9 @@ function AppContent() {
           <Route path="/config" element={<ConfigEditor />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/files" element={<FileManager />} />
+          <Route path="/skills" element={<Skills />} />
+          <Route path="/memory" element={<Memory />} />
+          <Route path="/cron" element={<CronJobs />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ContextMenu>

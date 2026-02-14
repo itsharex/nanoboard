@@ -12,13 +12,16 @@ import type {
   NanobotPath,
   LogResponse,
   NetworkStats,
-  Session,
+  SessionListResult,
   SessionMemory,
   WorkspaceFiles,
   OperationResult,
-  Skill,
+  SkillListResult,
   SkillContent,
+  ToggleResult,
   Theme,
+  CronListResult,
+  CronOperationResult,
 } from "@/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,7 +69,7 @@ export const networkApi = {
 
 // Session API
 export const sessionApi = {
-  list: () => invoke<Session[]>("list_sessions"),
+  list: () => invoke<SessionListResult>("list_sessions"),
   getMemory: (sessionId: string) => invoke<SessionMemory>("get_session_memory", { sessionId }),
   getWorkspaceFiles: () => invoke<WorkspaceFiles>("get_workspace_files"),
   delete: (sessionId: string) => invoke<OperationResult>("delete_session", { sessionId }),
@@ -77,9 +80,11 @@ export const sessionApi = {
 
 // Skill API
 export const skillApi = {
-  list: () => invoke<Skill[]>("list_skills"),
+  list: () => invoke<SkillListResult>("list_skills"),
   getContent: (skillId: string) => invoke<SkillContent>("get_skill_content", { skillId }),
+  save: (skillId: string, content: string) => invoke<OperationResult>("save_skill", { skillId, content }),
   delete: (skillId: string) => invoke<OperationResult>("delete_skill", { skillId }),
+  toggle: (skillId: string, enabled: boolean) => invoke<ToggleResult>("toggle_skill", { skillId, enabled }),
 };
 
 // File System API
@@ -103,4 +108,14 @@ export const themeApi = {
   getTheme: () => invoke<Theme>("get_theme"),
   setTheme: (theme: Theme) => invoke<Theme>("set_theme", { theme }),
   toggleTheme: () => invoke<Theme>("toggle_theme"),
+};
+
+// Cron API
+export const cronApi = {
+  list: () => invoke<CronListResult>("cron_list"),
+  add: (name: string, message: string, scheduleType: string, scheduleValue: string, deliver?: boolean, to?: string, channel?: string) =>
+    invoke<CronOperationResult>("cron_add", { name, message, scheduleType, scheduleValue, deliver, to, channel }),
+  remove: (jobId: string) => invoke<CronOperationResult>("cron_remove", { jobId }),
+  enable: (jobId: string, disable: boolean) => invoke<CronOperationResult>("cron_enable", { jobId, disable }),
+  run: (jobId: string) => invoke<CronOperationResult>("cron_run", { jobId }),
 };
