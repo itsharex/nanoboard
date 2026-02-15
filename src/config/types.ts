@@ -71,7 +71,31 @@ export interface Config {
   channels?: Record<string, Channel>;
   tools?: {
     restrictToWorkspace?: boolean;
+    mcpServers?: Record<string, McpServer>;
   };
+}
+
+// MCP Server 配置 (支持 stdio 和 HTTP 两种传输模式)
+export interface McpServer {
+  // Stdio 模式
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  // HTTP 模式
+  url?: string;
+  // 通用配置
+  disabled?: boolean;
+}
+
+// MCP Server UI 显示信息
+export interface McpServerInfo {
+  id: string;
+  name: string;
+  transport: "stdio" | "http";
+  command?: string;
+  args?: string[];
+  url?: string;
+  disabled?: boolean;
 }
 
 export interface ConfigTemplate {

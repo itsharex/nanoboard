@@ -20,6 +20,16 @@ export const PROVIDER_ICONS: Record<string, string> = {
 // 预定义的常用 AI Provider 列表
 export const AVAILABLE_PROVIDERS: ProviderInfo[] = [
   {
+    id: "custom",
+    nameKey: "providers.custom",
+    icon: "Server",
+    colorClass: "bg-slate-50 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400",
+    apiBase: "",
+    apiUrl: "",
+    defaultModel: "",
+    models: [],
+  },
+  {
     id: "openrouter",
     nameKey: "providers.openrouter",
     icon: "Network",
@@ -78,6 +88,16 @@ export const AVAILABLE_PROVIDERS: ProviderInfo[] = [
     apiUrl: "https://aistudio.google.com",
     defaultModel: "gemini-2.0-flash-exp",
     models: ["gemini-2.0-flash-exp", "gemini-pro", "gemini-1.5-pro"],
+  },
+  {
+    id: "minimax",
+    nameKey: "providers.minimax",
+    icon: "Cpu",
+    colorClass: "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400",
+    apiBase: "https://api.minimax.chat/v1",
+    apiUrl: "https://platform.minimax.io",
+    defaultModel: "MiniMax-Text-01",
+    models: ["MiniMax-Text-01", "abab6.5s-chat", "abab6.5-chat"],
   },
   {
     id: "aihubmix",

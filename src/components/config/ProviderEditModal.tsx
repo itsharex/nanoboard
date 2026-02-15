@@ -152,21 +152,6 @@ export default function ProviderEditModal({
                   </p>
                 )}
               </div>
-
-              {config.providers?.[providerId] && (
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => {
-                      onRemoveProvider(providerId);
-                      onClose();
-                    }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors text-sm"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {t("config.deleteConfig")}
-                  </button>
-                </div>
-              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -244,16 +229,40 @@ export default function ProviderEditModal({
         </div>
 
         {/* 底部按钮 */}
-        <div className="p-6 border-t border-gray-200 dark:border-dark-border-subtle flex justify-end gap-3">
-          <button
-            onClick={() => {
-              onSave();
-              onClose();
-            }}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-          >
-            {t("config.done")}
-          </button>
+        <div className="p-6 border-t border-gray-200 dark:border-dark-border-subtle flex items-center justify-between gap-3">
+          {/* 左侧：删除按钮 */}
+          <div>
+            {config.providers?.[providerId] && activeTab === "api" && (
+              <button
+                onClick={() => {
+                  onRemoveProvider(providerId);
+                  onClose();
+                }}
+                className="flex items-center gap-1 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors text-sm font-medium"
+              >
+                <Trash2 className="w-4 h-4" />
+                {t("config.deleteConfig")}
+              </button>
+            )}
+          </div>
+          {/* 右侧：取消和完成按钮 */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 dark:bg-dark-bg-hover hover:bg-gray-200 dark:hover:bg-dark-bg-active text-gray-700 dark:text-dark-text-primary rounded-lg transition-colors text-sm font-medium"
+            >
+              {t("config.cancel")}
+            </button>
+            <button
+              onClick={() => {
+                onSave();
+                onClose();
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              {t("config.done")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

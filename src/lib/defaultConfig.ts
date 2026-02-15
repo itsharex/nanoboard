@@ -78,6 +78,7 @@ export const DEFAULT_CONFIG = {
     }
   },
   tools: {
-    restrictToWorkspace: false
+    restrictToWorkspace: false,
+    mcpServers: {}
   }
 };

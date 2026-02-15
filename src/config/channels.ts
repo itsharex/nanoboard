@@ -12,8 +12,8 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.telegram",
     colorClass: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
     fields: [
-      { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.telegram.tokenPlaceholder" },
-      { name: "allowFrom", labelKey: "config.channels.telegram.allowFromPlaceholder", type: "text", placeholderKey: "channels.telegram.allowFromPlaceholder" },
+      { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "config.channels.telegram.tokenPlaceholder" },
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.telegram.allowFromPlaceholder" },
     ],
   },
   {
@@ -21,8 +21,8 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.discord",
     colorClass: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
     fields: [
-      { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.discord.tokenPlaceholder" },
-      { name: "allowFrom", labelKey: "config.channels.discord.allowFromPlaceholder", type: "text", placeholderKey: "channels.discord.allowFromPlaceholder" },
+      { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "config.channels.discord.tokenPlaceholder" },
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.discord.allowFromPlaceholder" },
     ],
   },
   {
@@ -30,7 +30,7 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.whatsapp",
     colorClass: "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400",
     fields: [
-      { name: "allowFrom", labelKey: "config.channels.whatsapp.allowFromPlaceholder", type: "text", placeholderKey: "channels.whatsapp.allowFromPlaceholder" },
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.whatsapp.allowFromPlaceholder" },
     ],
   },
   {
@@ -38,11 +38,11 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.feishu",
     colorClass: "bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
     fields: [
-      { name: "appId", labelKey: "config.apiKey", type: "text", placeholderKey: "channels.feishu.appIdPlaceholder" },
-      { name: "appSecret", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.feishu.appSecretPlaceholder" },
-      { name: "encryptKey", labelKey: "channels.feishu.encryptKeyLabel", type: "text", placeholderKey: "channels.feishu.encryptKeyPlaceholder" },
-      { name: "verificationToken", labelKey: "channels.feishu.verificationTokenLabel", type: "text", placeholderKey: "channels.feishu.verificationTokenPlaceholder" },
-      { name: "allowFrom", labelKey: "config.channels.feishu.allowFromPlaceholder", type: "text", placeholderKey: "channels.feishu.allowFromPlaceholder" },
+      { name: "appId", labelKey: "config.appId", type: "text", placeholderKey: "config.channels.feishu.appIdPlaceholder" },
+      { name: "appSecret", labelKey: "config.appSecret", type: "password", placeholderKey: "config.channels.feishu.appSecretPlaceholder" },
+      { name: "encryptKey", labelKey: "config.channels.feishu.encryptKeyLabel", type: "text", placeholderKey: "config.channels.feishu.encryptKeyPlaceholder" },
+      { name: "verificationToken", labelKey: "config.channels.feishu.verificationTokenLabel", type: "text", placeholderKey: "config.channels.feishu.verificationTokenPlaceholder" },
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.feishu.allowFromPlaceholder" },
     ],
   },
   {
@@ -50,9 +50,9 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.dingtalk",
     colorClass: "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400",
     fields: [
-      { name: "clientId", labelKey: "channels.dingtalk.clientIdLabel", type: "text", placeholderKey: "channels.dingtalk.clientIdPlaceholder" },
-      { name: "clientSecret", labelKey: "channels.dingtalk.clientSecretLabel", type: "password", placeholderKey: "channels.dingtalk.clientSecretPlaceholder" },
-      { name: "allowFrom", labelKey: "config.channels.dingtalk.allowFromPlaceholder", type: "text", placeholderKey: "channels.dingtalk.allowFromPlaceholder" },
+      { name: "clientId", labelKey: "config.channels.dingtalk.clientIdLabel", type: "text", placeholderKey: "config.channels.dingtalk.clientIdPlaceholder" },
+      { name: "clientSecret", labelKey: "config.channels.dingtalk.clientSecretLabel", type: "password", placeholderKey: "config.channels.dingtalk.clientSecretPlaceholder" },
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.dingtalk.allowFromPlaceholder" },
     ],
   },
   {
@@ -60,10 +60,10 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.slack",
     colorClass: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
     fields: [
-      { name: "botToken", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.slack.botTokenPlaceholder" },
-      { name: "appToken", labelKey: "config.apiKey", type: "password", placeholderKey: "channels.slack.appTokenPlaceholder" },
-      { name: "groupPolicy", labelKey: "channels.slack.groupPolicyLabel", type: "select", options: ["mention", "open", "allowlist"], default: "mention" },
-      { name: "allowFrom", labelKey: "channels.slack.allowFromLabel", type: "text", placeholderKey: "channels.slack.allowFromPlaceholder" },
+      { name: "botToken", labelKey: "config.botToken", type: "password", placeholderKey: "config.channels.slack.botTokenPlaceholder" },
+      { name: "appToken", labelKey: "config.appToken", type: "password", placeholderKey: "config.channels.slack.appTokenPlaceholder" },
+      { name: "groupPolicy", labelKey: "config.channels.slack.groupPolicyLabel", type: "select", options: ["mention", "open", "allowlist"], default: "mention" },
+      { name: "allowFrom", labelKey: "config.channels.slack.allowFromLabel", type: "text", placeholderKey: "config.channels.slack.allowFromPlaceholder" },
     ],
   },
   {
@@ -71,9 +71,9 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.qq",
     colorClass: "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
     fields: [
-      { name: "appId", labelKey: "config.apiKey", type: "text", placeholderKey: "channels.qq.appIdPlaceholder" },
-      { name: "secret", labelKey: "channels.qq.secretLabel", type: "password", placeholderKey: "channels.qq.secretPlaceholder" },
-      { name: "allowFrom", labelKey: "config.channels.qq.allowFromPlaceholder", type: "text", placeholderKey: "channels.qq.allowFromPlaceholder" },
+      { name: "appId", labelKey: "config.appId", type: "text", placeholderKey: "config.channels.qq.appIdPlaceholder" },
+      { name: "secret", labelKey: "config.channels.qq.secretLabel", type: "password", placeholderKey: "config.channels.qq.secretPlaceholder" },
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.qq.allowFromPlaceholder" },
     ],
   },
   {
@@ -81,16 +81,16 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     nameKey: "channels.email",
     colorClass: "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
     fields: [
-      { name: "imapHost", labelKey: "channels.email.imapServerLabel", type: "text", placeholderKey: "channels.email.imapServerPlaceholder" },
-      { name: "imapPort", labelKey: "channels.email.imapPortLabel", type: "number", default: 993 },
-      { name: "imapUsername", labelKey: "channels.email.imapUsernameLabel", type: "text", placeholderKey: "channels.email.imapUsernamePlaceholder" },
-      { name: "imapPassword", labelKey: "channels.email.imapPasswordLabel", type: "password", placeholderKey: "channels.email.imapPasswordPlaceholder" },
-      { name: "smtpHost", labelKey: "channels.email.smtpServerLabel", type: "text", placeholderKey: "channels.email.smtpServerPlaceholder" },
-      { name: "smtpPort", labelKey: "channels.email.smtpPortLabel", type: "number", default: 587 },
-      { name: "smtpUsername", labelKey: "channels.email.smtpUsernameLabel", type: "text", placeholderKey: "channels.email.smtpUsernamePlaceholder" },
-      { name: "smtpPassword", labelKey: "channels.email.smtpPasswordLabel", type: "password", placeholderKey: "channels.email.smtpPasswordPlaceholder" },
-      { name: "fromAddress", labelKey: "channels.email.fromAddressLabel", type: "text", placeholderKey: "channels.email.fromAddressPlaceholder" },
-      { name: "allowFrom", labelKey: "channels.email.allowFromLabel", type: "text", placeholderKey: "channels.email.allowFromPlaceholder" },
+      { name: "imapHost", labelKey: "config.channels.email.imapServerLabel", type: "text", placeholderKey: "config.channels.email.imapServerPlaceholder" },
+      { name: "imapPort", labelKey: "config.channels.email.imapPortLabel", type: "number", default: 993 },
+      { name: "imapUsername", labelKey: "config.channels.email.imapUsernameLabel", type: "text", placeholderKey: "config.channels.email.imapUsernamePlaceholder" },
+      { name: "imapPassword", labelKey: "config.channels.email.imapPasswordLabel", type: "password", placeholderKey: "config.channels.email.imapPasswordPlaceholder" },
+      { name: "smtpHost", labelKey: "config.channels.email.smtpServerLabel", type: "text", placeholderKey: "config.channels.email.smtpServerPlaceholder" },
+      { name: "smtpPort", labelKey: "config.channels.email.smtpPortLabel", type: "number", default: 587 },
+      { name: "smtpUsername", labelKey: "config.channels.email.smtpUsernameLabel", type: "text", placeholderKey: "config.channels.email.smtpUsernamePlaceholder" },
+      { name: "smtpPassword", labelKey: "config.channels.email.smtpPasswordLabel", type: "password", placeholderKey: "config.channels.email.smtpPasswordPlaceholder" },
+      { name: "fromAddress", labelKey: "config.channels.email.fromAddressLabel", type: "text", placeholderKey: "config.channels.email.fromAddressPlaceholder" },
+      { name: "allowFrom", labelKey: "config.channels.email.allowFromLabel", type: "text", placeholderKey: "config.channels.email.allowFromPlaceholder" },
     ],
   },
   {

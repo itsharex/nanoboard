@@ -103,6 +103,12 @@ export default function ChannelEditModal({
             onClick={onClose}
             className="px-4 py-2 bg-gray-100 dark:bg-dark-bg-hover hover:bg-gray-200 dark:hover:bg-dark-bg-active text-gray-700 dark:text-dark-text-primary rounded-lg transition-colors text-sm font-medium"
           >
+            {t("config.cancel")}
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+          >
             {t("config.done")}
           </button>
         </div>

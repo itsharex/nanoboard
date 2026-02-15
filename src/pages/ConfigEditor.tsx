@@ -24,6 +24,9 @@ import {
   FolderOpen,
   Code,
   Shield,
+  Plug,
+  Terminal,
+  Globe,
 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -38,12 +41,14 @@ import type {
   ProviderInfo,
   ChannelInfo,
   Provider,
+  McpServer,
 } from "@/config/types";
 import { AVAILABLE_PROVIDERS } from "@/config/providers";
 import { CHANNELS_CONFIG } from "@/config/channels";
 import { formatTimestamp } from "@/utils/format";
 import ProviderEditModal from "@/components/config/ProviderEditModal";
 import ChannelEditModal from "@/components/config/ChannelEditModal";
+import McpServerEditModal from "@/components/config/McpServerEditModal";
 import HistoryPanel from "@/components/config/HistoryPanel";
 import CodeEditorView from "@/components/config/CodeEditorView";
 
@@ -72,7 +77,7 @@ export default function ConfigEditor() {
   const [config, setConfig] = useState<Config>({});
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["providers", "channels"])
+    new Set(["providers", "channels", "mcp", "security"])
   );
   const [editingProvider, setEditingProvider] = useState<{
     isOpen: boolean;
@@ -109,6 +114,12 @@ export default function ConfigEditor() {
     channelKey: string;
     channelInfo: ChannelInfo | null;
   }>({ isOpen: false, channelKey: "", channelInfo: null });
+  const [editingMcpServer, setEditingMcpServer] = useState<{
+    isOpen: boolean;
+    serverId: string;
+    server: McpServer | null;
+    mode: "add" | "edit";
+  }>({ isOpen: false, serverId: "", server: null, mode: "add" });
   const toast = useToast();
 
   // 代码编辑器模式状态
@@ -483,6 +494,55 @@ export default function ConfigEditor() {
       toast.showSuccess(value ? t("config.restrictEnabled") : t("config.restrictDisabled"));
     } catch (error) {
       toast.showError(t("config.autoSaveFailed"));
+    }
+  }
+
+  // MCP Server 相关函数
+  async function saveMcpServer(serverId: string, server: McpServer) {
+    const updatedConfig = {
+      ...config,
+      tools: {
+        ...config.tools,
+        mcpServers: {
+          ...config.tools?.mcpServers,
+          [serverId]: server,
+        },
+      },
+    };
+    setConfig(updatedConfig);
+
+    try {
+      const configToSave = cleanConfigForSave(updatedConfig);
+      await configApi.save(configToSave);
+      setOriginalConfig(updatedConfig);
+      setCode(JSON.stringify(updatedConfig, null, 2));
+      toast.showSuccess(t("mcp.serverSaved"));
+    } catch (error) {
+      toast.showError(t("mcp.serverSaveFailed"));
+    }
+  }
+
+  async function deleteMcpServer(serverId: string) {
+    const currentServers = { ...config.tools?.mcpServers };
+    delete currentServers[serverId];
+
+    const updatedConfig = {
+      ...config,
+      tools: {
+        ...config.tools,
+        mcpServers: currentServers,
+      },
+    };
+    setConfig(updatedConfig);
+
+    try {
+      const configToSave = cleanConfigForSave(updatedConfig);
+      await configApi.save(configToSave);
+      setOriginalConfig(updatedConfig);
+      setCode(JSON.stringify(updatedConfig, null, 2));
+      toast.showSuccess(t("mcp.serverDeleted"));
+    } catch (error) {
+      toast.showError(t("mcp.serverDeleteFailed"));
     }
   }
 
@@ -1019,6 +1079,140 @@ export default function ConfigEditor() {
           )}
         </div>
 
+        {/* MCP Servers 配置 */}
+        <div className="bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle overflow-hidden transition-colors duration-200">
+          <button
+            onClick={() => toggleSection("mcp")}
+            className="w-full p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-bg-hover transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
+                <Plug className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
+                {t("mcp.title")}
+              </h2>
+            </div>
+            {expandedSections.has("mcp") ? (
+              <ChevronUp className="w-5 h-5 text-gray-400 dark:text-dark-text-muted" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400 dark:text-dark-text-muted" />
+            )}
+          </button>
+
+          {expandedSections.has("mcp") && (
+            <div className="p-5 pt-0 space-y-4">
+              {/* MCP Server 列表 */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-600 dark:text-dark-text-secondary">{t("mcp.description")}</p>
+                  <button
+                    onClick={() =>
+                      setEditingMcpServer({
+                        isOpen: true,
+                        serverId: "",
+                        server: null,
+                        mode: "add",
+                      })
+                    }
+                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {t("mcp.addServer")}
+                  </button>
+                </div>
+
+                {config.tools?.mcpServers && Object.keys(config.tools.mcpServers).length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(config.tools.mcpServers).map(([serverId, server]) => {
+                      const isEnabled = !server.disabled;
+                      const isHttpMode = !!server.url;
+                      return (
+                        <div
+                          key={serverId}
+                          className={`group rounded-lg border transition-all hover:shadow-md ${
+                            isEnabled
+                              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-500/50"
+                              : "bg-white dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle hover:border-gray-300 dark:hover:border-dark-border-default"
+                          }`}
+                        >
+                          <div className="w-full p-4 text-left">
+                            <div className="flex items-center justify-between">
+                              <div
+                                className="flex items-center gap-2 flex-1 cursor-pointer"
+                                onClick={() =>
+                                  setEditingMcpServer({
+                                    isOpen: true,
+                                    serverId,
+                                    server,
+                                    mode: "edit",
+                                  })
+                                }
+                              >
+                                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                                  {isHttpMode ? (
+                                    <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                  ) : (
+                                    <Terminal className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary text-sm">
+                                      {serverId}
+                                    </h3>
+                                    {isEnabled && (
+                                      <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs rounded-full">
+                                        {t("config.enabled")}
+                                      </span>
+                                    )}
+                                    {!isEnabled && (
+                                      <span className="px-2 py-0.5 bg-gray-100 dark:bg-dark-bg-hover text-gray-600 dark:text-dark-text-muted text-xs rounded-full">
+                                        {t("config.notEnabled")}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-0.5">
+                                    {isHttpMode ? t("mcp.http") : t("mcp.stdio")}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // 切换 disabled 状态
+                                  const updatedServer = { ...server, disabled: isEnabled };
+                                  saveMcpServer(serverId, updatedServer);
+                                }}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                  isEnabled ? "bg-blue-600" : "bg-gray-300 dark:bg-dark-border-default"
+                                }`}
+                                title={isEnabled ? t("config.clickToDisable") : t("config.clickToEnable")}
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-dark-text-primary transition-transform shadow ${
+                                    isEnabled ? "translate-x-5" : "translate-x-0.5"
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={Plug}
+                    title={t("mcp.noServers")}
+                    description={t("mcp.noServersDesc")}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Security 配置 */}
         <div className="bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle overflow-hidden transition-colors duration-200">
           <button
@@ -1196,6 +1390,19 @@ export default function ConfigEditor() {
         config={config}
         onClose={() => setEditingChannel({ isOpen: false, channelKey: "", channelInfo: null })}
         onUpdateField={updateChannelField}
+      />
+
+      {/* MCP Server 编辑模态框 */}
+      <McpServerEditModal
+        isOpen={editingMcpServer.isOpen}
+        serverId={editingMcpServer.serverId}
+        server={editingMcpServer.server}
+        mode={editingMcpServer.mode}
+        onClose={() =>
+          setEditingMcpServer({ isOpen: false, serverId: "", server: null, mode: "add" })
+        }
+        onSave={saveMcpServer}
+        onDelete={deleteMcpServer}
       />
     </div>
   );
