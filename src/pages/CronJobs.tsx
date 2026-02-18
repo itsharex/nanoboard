@@ -453,12 +453,16 @@ export default function CronJobs() {
   function getChannelDisplayName(channel: string | null): string {
     if (!channel) return "-";
     const channelNames: Record<string, string> = {
+      telegram: "Telegram",
+      discord: "Discord",
+      whatsapp: "WhatsApp",
+      mochat: "Mochat",
       feishu: "飞书",
-      wecom: "企业微信",
       dingtalk: "钉钉",
       slack: "Slack",
-      telegram: "Telegram",
+      qq: "QQ",
       email: "邮件",
+      terminal: "终端",
     };
     return channelNames[channel] || channel;
   }
@@ -904,42 +908,66 @@ export default function CronJobs() {
 
               {/* 推送配置 */}
               <div className="border-t border-gray-200 dark:border-dark-border-subtle pt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <input
-                    type="checkbox"
-                    id="deliver"
-                    checked={form.deliver}
-                    onChange={(e) => setForm({ ...form, deliver: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor="deliver"
-                    className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary"
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">
+                      {t("cron.enableDeliver")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, deliver: !form.deliver })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-dark-bg-card ${
+                      form.deliver
+                        ? "bg-purple-600 dark:bg-purple-500"
+                        : "bg-gray-200 dark:bg-gray-700"
+                    }`}
                   >
-                    {t("cron.enableDeliver")}
-                  </label>
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        form.deliver ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 {form.deliver && (
-                  <div className="grid grid-cols-2 gap-3 pl-6">
+                  <div className="space-y-3 p-3 bg-purple-50/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-800/30">
+                    {/* 渠道选择 - 使用卡片式按钮 */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-1">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-2">
                         {t("cron.channel")}
                       </label>
-                      <select
-                        value={form.channel}
-                        onChange={(e) => setForm({ ...form, channel: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary"
-                      >
-                        <option value="">{t("cron.selectChannel")}</option>
-                        <option value="feishu">飞书</option>
-                        <option value="wecom">企业微信</option>
-                        <option value="dingtalk">钉钉</option>
-                        <option value="slack">Slack</option>
-                        <option value="telegram">Telegram</option>
-                        <option value="email">邮件</option>
-                      </select>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { value: "telegram", label: "Telegram" },
+                          { value: "discord", label: "Discord" },
+                          { value: "whatsapp", label: "WhatsApp" },
+                          { value: "mochat", label: "Mochat" },
+                          { value: "feishu", label: "飞书" },
+                          { value: "dingtalk", label: "钉钉" },
+                          { value: "slack", label: "Slack" },
+                          { value: "qq", label: "QQ" },
+                          { value: "email", label: "邮件" },
+                        ].map((ch) => (
+                          <button
+                            key={ch.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, channel: ch.value })}
+                            className={`flex items-center justify-center px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                              form.channel === ch.value
+                                ? "bg-purple-100 dark:bg-purple-800/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300"
+                                : "bg-white dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle text-gray-600 dark:text-dark-text-muted hover:border-purple-200 dark:hover:border-purple-700"
+                            }`}
+                          >
+                            <span>{ch.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* 接收者输入 */}
                     <div>
                       <label className="block text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-1">
                         {t("cron.recipient")}
@@ -949,8 +977,20 @@ export default function CronJobs() {
                         value={form.to}
                         onChange={(e) => setForm({ ...form, to: e.target.value })}
                         placeholder={t("cron.recipientPlaceholder")}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted"
+                        className="w-full px-3 py-2 bg-white dark:bg-dark-bg-card border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted"
                       />
+                      <p className="mt-1 text-[10px] text-gray-400 dark:text-dark-text-muted">
+                        {form.channel === "telegram" && "Telegram 用户 ID 或群组 ID（如：-100xxxxxxxxxx）"}
+                        {form.channel === "discord" && "Discord 用户 ID 或频道 ID"}
+                        {form.channel === "whatsapp" && "WhatsApp 手机号码（含区号）"}
+                        {form.channel === "mochat" && "Mochat 手机号码（含区号）"}
+                        {form.channel === "feishu" && "飞书用户 ou_xxx 或群组 ID"}
+                        {form.channel === "dingtalk" && "钉钉用户 staffId 或群组 ID"}
+                        {form.channel === "slack" && "Slack 用户 ID 或频道 ID"}
+                        {form.channel === "qq" && "QQ 号码"}
+                        {form.channel === "email" && "接收邮件的邮箱地址"}
+                        {!form.channel && "请先选择推送渠道"}
+                      </p>
                     </div>
                   </div>
                 )}

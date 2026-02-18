@@ -265,6 +265,11 @@
         "description": "需要扫描 QR 码链接",
         "allowFromPlaceholder": "留空允许所有人，或输入手机号，用逗号分隔"
       },
+      "mochat": {
+        "difficulty": "中等",
+        "description": "需要 Node.js ≥18，扫描 QR 码链接设备",
+        "allowFromPlaceholder": "留空允许所有人，或输入手机号，用逗号分隔"
+      },
       "feishu": {
         "difficulty": "中等",
         "description": "需要应用凭证",
@@ -639,6 +644,7 @@
     "telegram": "Telegram",
     "discord": "Discord",
     "whatsapp": "WhatsApp",
+    "mochat": "Mochat",
     "feishu": "飞书",
     "dingtalk": "钉钉",
     "slack": "Slack",

@@ -257,6 +257,11 @@
         "description": "Needs QR code scanning to link",
         "allowFromPlaceholder": "Leave empty to allow everyone, or enter phone numbers separated by commas"
       },
+      "mochat": {
+        "difficulty": "Medium",
+        "description": "Requires Node.js ≥18, scan QR code to link device",
+        "allowFromPlaceholder": "Leave empty to allow everyone, or enter phone numbers separated by commas"
+      },
       "feishu": {
         "difficulty": "Medium",
         "description": "Needs app credentials",
@@ -632,6 +637,7 @@
     "telegram": "Telegram",
     "discord": "Discord",
     "whatsapp": "WhatsApp",
+    "mochat": "Mochat",
     "feishu": "Feishu",
     "dingtalk": "DingTalk",
     "slack": "Slack",

@@ -34,6 +34,14 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     ],
   },
   {
+    key: "mochat",
+    nameKey: "channels.mochat",
+    colorClass: "bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400",
+    fields: [
+      { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.mochat.allowFromPlaceholder" },
+    ],
+  },
+  {
     key: "feishu",
     nameKey: "channels.feishu",
     colorClass: "bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
