@@ -185,7 +185,7 @@ fn find_via_which(command: &str) -> Option<String> {
     #[cfg(windows)]
     let which_cmd = "where";
 
-    let output = Command::new(which_cmd)
+    let output = apply_hidden_window(Command::new(which_cmd))
         .arg(command)
         .output()
         .ok()?;
@@ -240,7 +240,7 @@ fn find_command_pip() -> Option<String> {
 fn find_via_pip(package: &str) -> Option<String> {
     let pip_cmd = find_command_pip().unwrap_or_else(|| "pip3".to_string());
 
-    let output = Command::new(&pip_cmd)
+    let output = apply_hidden_window(Command::new(&pip_cmd))
         .args(["show", package])
         .output()
         .ok()?;
@@ -955,7 +955,7 @@ pub async fn onboard_nanobot() -> Result<serde_json::Value, String> {
             .or_else(|| Some("nanobot".to_string()))
             .unwrap();
 
-        Command::new(&nanobot_cmd)
+        apply_hidden_window(Command::new(&nanobot_cmd))
             .args(["onboard"])
             .env("PYTHONIOENCODING", "utf-8")
             .output()
@@ -1122,7 +1122,7 @@ pub async fn get_nanobot_version() -> Result<serde_json::Value, String> {
         }
     };
 
-    let output = Command::new(&nanobot_cmd)
+    let output = apply_hidden_window(Command::new(&nanobot_cmd))
         .arg("-v")
         .env("PYTHONUTF8", "1")
         .env("PYTHONIOENCODING", "utf-8")
@@ -1250,7 +1250,7 @@ fn check_python_environment() -> DiagnosticCheck {
     for cmd in python_commands {
         if let Some(path) = find_via_which(cmd) {
             // 检查版本
-            let output = Command::new(cmd)
+            let output = apply_hidden_window(Command::new(cmd))
                 .arg("--version")
                 .output();
 
@@ -1327,7 +1327,7 @@ fn parse_python_version(version_str: &str) -> Option<(u32, u32, u32)> {
 fn check_pip_command() -> DiagnosticCheck {
     if let Some(pip_path) = find_command_pip() {
         // 检查 pip 版本
-        let output = Command::new(&pip_path)
+        let output = apply_hidden_window(Command::new(&pip_path))
             .arg("--version")
             .output();
 
@@ -1363,7 +1363,7 @@ fn check_nanobot_installation() -> DiagnosticCheck {
 
     if let Some(path) = nanobot_path {
         // 尝试运行 --version
-        let output = Command::new(&path)
+        let output = apply_hidden_window(Command::new(&path))
             .arg("--version")
             .env("PYTHONUTF8", "1")
             .env("PYTHONIOENCODING", "utf-8")
@@ -1427,7 +1427,7 @@ fn check_nanobot_usable() -> DiagnosticCheck {
 
     if let Some(path) = nanobot_path {
         // 尝试运行 --version 来验证可用性
-        let output = Command::new(&path)
+        let output = apply_hidden_window(Command::new(&path))
             .arg("--version")
             .env("PYTHONUTF8", "1")
             .env("PYTHONIOENCODING", "utf-8")
@@ -1557,7 +1557,7 @@ fn check_nanobot_dependencies() -> DiagnosticCheck {
     let mut missing_deps = Vec::new();
 
     // 检查 fastapi
-    if Command::new("python")
+    if apply_hidden_window(Command::new("python"))
         .args(["-c", "import fastapi"])
         .output()
         .is_err()
@@ -1566,7 +1566,7 @@ fn check_nanobot_dependencies() -> DiagnosticCheck {
     }
 
     // 检查 openai
-    if Command::new("python")
+    if apply_hidden_window(Command::new("python"))
         .args(["-c", "import openai"])
         .output()
         .is_err()
