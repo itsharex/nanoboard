@@ -1313,13 +1313,13 @@ fn get_oauth_token_paths(home_dir: &std::path::Path, provider: &str) -> Vec<std:
     #[cfg(target_os = "windows")]
     {
         if let Ok(appdata) = std::env::var("APPDATA") {
-            let win_path = std::path::PathBuf::from(appdata)
+            let win_path = std::path::PathBuf::from(&appdata)
                 .join("oauth-cli-kit")
                 .join("auth")
                 .join(format!("{}_oauth.json", provider_filename));
             paths.push(win_path);
 
-            let default_path = std::path::PathBuf::from(appdata)
+            let default_path = std::path::PathBuf::from(&appdata)
                 .join("oauth-cli-kit")
                 .join("auth")
                 .join("oauth.json");
