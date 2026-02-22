@@ -215,14 +215,14 @@
     "apiBaseUrlDefault": "Default: {{url}}",
     "getApiKeyAt": "Get API Key at {{url}}",
     "deleteConfig": "Delete Configuration",
-    "model": "Default Model (model)",
+    "model": "Default Model",
     "modelPlaceholder": "e.g., anthropic/claude-opus-4-5",
     "modelDesc": "Default LLM model used by agent",
-    "maxTokens": "Max Tokens (max_tokens)",
+    "maxTokens": "Max Tokens",
     "maxTokensDesc": "Maximum token count for a single request",
-    "maxToolIterations": "Max Tool Iterations (max_tool_iterations)",
+    "maxToolIterations": "Max Tool Iterations",
     "maxToolIterationsDesc": "Maximum iterations for agent tool execution",
-    "workspace": "Workspace Path (workspace)",
+    "workspace": "Workspace Path",
     "workspacePlaceholder": "~/.nanobot/workspace",
     "workspaceDesc": "Default path for agent workspace",
     "temperature": "Temperature (temperature) (0.0 - 2.0)",
@@ -249,7 +249,8 @@
         "difficulty": "Simple",
         "description": "Recommended, only needs bot token",
         "tokenPlaceholder": "Get from @BotFather",
-        "allowFromPlaceholder": "Leave empty to allow everyone, or enter user IDs separated by commas"
+        "allowFromPlaceholder": "Leave empty to allow everyone, or enter user IDs separated by commas",
+        "replyToMessageLabel": "Reply to Original Message"
       },
       "discord": {
         "difficulty": "Simple",
@@ -636,7 +637,8 @@
     "vllm": "vLLM",
     "siliconflow": "SiliconFlow",
     "githubCopilot": "GitHub Copilot",
-    "openaiCodex": "OpenAI Codex"
+    "openaiCodex": "OpenAI Codex",
+    "volcengine": "VolcEngine"
   },
   "mcp": {
     "title": "MCP Servers",
@@ -658,10 +660,14 @@
     "envDesc": "One per line, format: KEY=value",
     "url": "URL",
     "urlDesc": "SSE endpoint URL of the MCP server",
+    "headers": "HTTP Headers",
+    "headersDesc": "Custom HTTP headers for authentication. One per line, format: Header-Name: value",
     "disabled": "Disabled",
     "add": "Add",
     "serverSaved": "MCP server configuration saved",
     "serverSaveFailed": "Failed to save MCP server configuration",
+    "serverEnabled": "MCP server enabled",
+    "serverDisabled": "MCP server disabled",
     "serverDeleted": "MCP server deleted",
     "serverDeleteFailed": "Failed to delete MCP server"
   },
@@ -801,7 +807,10 @@
       "everyNSeconds": "Every {{n}} seconds",
       "everyNHours": "Every {{n}} hours",
       "everyNDays": "Every {{n}} days"
-    }
+    },
+    "timezone": "Timezone",
+    "timezoneDefault": "Use system timezone",
+    "timezoneHint": "Leave empty to use system timezone, select a timezone to run the task in that timezone"
   },
   "workspace": {
     "title": "Workspace",

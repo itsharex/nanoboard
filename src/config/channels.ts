@@ -14,6 +14,7 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
     fields: [
       { name: "token", labelKey: "config.apiKey", type: "password", placeholderKey: "config.channels.telegram.tokenPlaceholder" },
       { name: "allowFrom", labelKey: "config.allowFrom", type: "text", placeholderKey: "config.channels.telegram.allowFromPlaceholder" },
+      { name: "replyToMessage", labelKey: "config.channels.telegram.replyToMessageLabel", type: "select", options: ["true", "false"], default: "false" },
     ],
   },
   {

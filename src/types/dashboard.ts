@@ -60,9 +60,9 @@ export interface DashboardConfig {
   agents?: {
     defaults?: {
       model?: string;
-      max_tokens?: number;
+      maxTokens?: number;
       temperature?: number;
-      max_tool_iterations?: number;
+      maxToolIterations?: number;
     };
   };
   channels?: Record<string, any>;

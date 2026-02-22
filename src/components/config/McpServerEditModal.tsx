@@ -33,6 +33,7 @@ export default function McpServerEditModal({
   const [args, setArgs] = useState("");
   const [url, setUrl] = useState("");
   const [env, setEnv] = useState("");
+  const [headers, setHeaders] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +50,13 @@ export default function McpServerEditModal({
                 .join("\n")
             : ""
         );
+        setHeaders(
+          server.headers
+            ? Object.entries(server.headers)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join("\n")
+            : ""
+        );
       } else {
         setTransport("stdio");
         setName("");
@@ -56,6 +64,7 @@ export default function McpServerEditModal({
         setArgs("");
         setUrl("");
         setEnv("");
+        setHeaders("");
       }
     }
   }, [isOpen, server, serverId]);
@@ -66,10 +75,7 @@ export default function McpServerEditModal({
     const serverName = name.trim();
     if (!serverName) return;
 
-    const newServer: McpServer = {
-      // 保留原有的 disabled 状态
-      disabled: server?.disabled || false,
-    };
+    const newServer: McpServer = {};
 
     if (transport === "stdio") {
       if (command.trim()) {
@@ -93,6 +99,22 @@ export default function McpServerEditModal({
     } else {
       if (url.trim()) {
         newServer.url = url.trim();
+      }
+      if (headers.trim()) {
+        const headersObj: Record<string, string> = {};
+        headers.split("\n").forEach((line) => {
+          const colonIndex = line.indexOf(":");
+          if (colonIndex > 0) {
+            const key = line.slice(0, colonIndex).trim();
+            const value = line.slice(colonIndex + 1).trim();
+            if (key && value) {
+              headersObj[key] = value;
+            }
+          }
+        });
+        if (Object.keys(headersObj).length > 0) {
+          newServer.headers = headersObj;
+        }
       }
     }
 
@@ -235,6 +257,23 @@ export default function McpServerEditModal({
                   />
                   <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">
                     {t("mcp.urlDesc")}
+                  </p>
+                </div>
+
+                {/* Headers (HTTP Auth) */}
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-dark-text-secondary mb-1">
+                    {t("mcp.headers")}
+                  </label>
+                  <textarea
+                    value={headers}
+                    onChange={(e) => setHeaders(e.target.value)}
+                    placeholder="Authorization: Bearer xxx&#10;X-API-Key: yyy"
+                    rows={3}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted resize-none"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">
+                    {t("mcp.headersDesc")}
                   </p>
                 </div>
               </>

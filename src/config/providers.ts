@@ -188,6 +188,16 @@ export const AVAILABLE_PROVIDERS: ProviderInfo[] = [
     authType: "oauth",
     loginCommand: "openai-codex",
   },
+  {
+    id: "volcengine",
+    nameKey: "providers.volcengine",
+    icon: "Zap",
+    colorClass: "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
+    apiBase: "https://ark.cn-beijing.volces.com/api/v3",
+    apiUrl: "https://console.volcengine.com/ark",
+    defaultModel: "doubao-pro-32k",
+    models: ["doubao-pro-32k", "doubao-pro-128k", "doubao-lite-32k", "doubao-lite-128k"],
+  },
 ];
 
 // 根据 ID 获取 Provider 信息

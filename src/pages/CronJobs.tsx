@@ -13,12 +13,10 @@ import {
   X,
   Power,
   PowerOff,
-  Send,
   Pencil,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Bell,
 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -35,9 +33,7 @@ interface AddJobForm {
   cronDow: string;
   everySeconds: string;
   atTime: string;
-  deliver: boolean;
-  channel: string;
-  to: string;
+  tz: string;
 }
 
 // 格式化时间戳为可读日期时间
@@ -91,9 +87,7 @@ export default function CronJobs() {
     cronDow: "*",
     everySeconds: "3600",
     atTime: "",
-    deliver: false,
-    channel: "",
-    to: "",
+    tz: "",
   });
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -158,9 +152,7 @@ export default function CronJobs() {
           form.scheduleType,
           scheduleValue.trim(),
           editingJob.enabled, // 保持原有启用状态
-          form.deliver || undefined,
-          form.to.trim() || undefined,
-          form.channel.trim() || undefined
+          form.tz.trim() || undefined
         );
       } else {
         // 添加模式：调用 nanobot cron add
@@ -169,9 +161,7 @@ export default function CronJobs() {
           form.message.trim(),
           form.scheduleType,
           scheduleValue.trim(),
-          form.deliver || undefined,
-          form.to.trim() || undefined,
-          form.channel.trim() || undefined
+          form.tz.trim() || undefined
         );
       }
 
@@ -240,9 +230,7 @@ export default function CronJobs() {
       cronDow: "*",
       everySeconds: "3600",
       atTime: "",
-      deliver: false,
-      channel: "",
-      to: "",
+      tz: "",
     });
     setEditingJob(null);
   }
@@ -289,9 +277,7 @@ export default function CronJobs() {
       cronDow,
       everySeconds,
       atTime,
-      deliver: job.payload?.deliver || false,
-      channel: job.payload?.channel || "",
-      to: job.payload?.to || "",
+      tz: job.schedule?.tz || "",
     });
     setShowAddDialog(true);
   }
@@ -449,24 +435,6 @@ export default function CronJobs() {
     return t("cron.descriptions.everyNDays", { n: Math.floor(s / 86400) });
   }
 
-  // 获取渠道显示名称
-  function getChannelDisplayName(channel: string | null): string {
-    if (!channel) return "-";
-    const channelNames: Record<string, string> = {
-      telegram: "Telegram",
-      discord: "Discord",
-      whatsapp: "WhatsApp",
-      mochat: "Mochat",
-      feishu: "飞书",
-      dingtalk: "钉钉",
-      slack: "Slack",
-      qq: "QQ",
-      email: "邮件",
-      terminal: "终端",
-    };
-    return channelNames[channel] || channel;
-  }
-
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-dark-bg-base transition-colors duration-200">
       {/* 页面头部 */}
@@ -571,15 +539,6 @@ export default function CronJobs() {
                               </span>
                             )}
                           </div>
-                          {/* 投递状态 */}
-                          {job.payload?.deliver && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Bell className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-                              <span className="text-xs text-purple-600 dark:text-purple-400">
-                                {getChannelDisplayName(job.payload.channel)}
-                              </span>
-                            </div>
-                          )}
                         </div>
                       </div>
                       {/* 操作按钮 */}
@@ -906,100 +865,39 @@ export default function CronJobs() {
                 </div>
               )}
 
-              {/* 推送配置 */}
-              <div className="border-t border-gray-200 dark:border-dark-border-subtle pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">
-                      {t("cron.enableDeliver")}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, deliver: !form.deliver })}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-dark-bg-card ${
-                      form.deliver
-                        ? "bg-purple-600 dark:bg-purple-500"
-                        : "bg-gray-200 dark:bg-gray-700"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        form.deliver ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {form.deliver && (
-                  <div className="space-y-3 p-3 bg-purple-50/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-800/30">
-                    {/* 渠道选择 - 使用卡片式按钮 */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-2">
-                        {t("cron.channel")}
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { value: "telegram", label: "Telegram" },
-                          { value: "discord", label: "Discord" },
-                          { value: "whatsapp", label: "WhatsApp" },
-                          { value: "mochat", label: "Mochat" },
-                          { value: "feishu", label: "飞书" },
-                          { value: "dingtalk", label: "钉钉" },
-                          { value: "slack", label: "Slack" },
-                          { value: "qq", label: "QQ" },
-                          { value: "email", label: "邮件" },
-                        ].map((ch) => (
-                          <button
-                            key={ch.value}
-                            type="button"
-                            onClick={() => setForm({ ...form, channel: ch.value })}
-                            className={`flex items-center justify-center px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                              form.channel === ch.value
-                                ? "bg-purple-100 dark:bg-purple-800/40 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300"
-                                : "bg-white dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle text-gray-600 dark:text-dark-text-muted hover:border-purple-200 dark:hover:border-purple-700"
-                            }`}
-                          >
-                            <span>{ch.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 接收者输入 */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-1">
-                        {t("cron.recipient")}
-                      </label>
-                      <input
-                        type="text"
-                        value={form.to}
-                        onChange={(e) => setForm({ ...form, to: e.target.value })}
-                        placeholder={t("cron.recipientPlaceholder")}
-                        className="w-full px-3 py-2 bg-white dark:bg-dark-bg-card border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted"
-                      />
-                      <p className="mt-1 text-[10px] text-gray-400 dark:text-dark-text-muted">
-                        {form.channel === "telegram" && "Telegram 用户 ID 或群组 ID（如：-100xxxxxxxxxx）"}
-                        {form.channel === "discord" && "Discord 用户 ID 或频道 ID"}
-                        {form.channel === "whatsapp" && "WhatsApp 手机号码（含区号）"}
-                        {form.channel === "mochat" && "Mochat 手机号码（含区号）"}
-                        {form.channel === "feishu" && "飞书用户 ou_xxx 或群组 ID"}
-                        {form.channel === "dingtalk" && "钉钉用户 staffId 或群组 ID"}
-                        {form.channel === "slack" && "Slack 用户 ID 或频道 ID"}
-                        {form.channel === "qq" && "QQ 号码"}
-                        {form.channel === "email" && "接收邮件的邮箱地址"}
-                        {!form.channel && "请先选择推送渠道"}
-                      </p>
-                    </div>
-                  </div>
-                )}
+              {/* 时区选择 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+                  {t("cron.timezone")}
+                </label>
+                <select
+                  value={form.tz}
+                  onChange={(e) => setForm({ ...form, tz: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary"
+                >
+                  <option value="">{t("cron.timezoneDefault")}</option>
+                  <option value="Asia/Shanghai">Asia/Shanghai (北京时间)</option>
+                  <option value="Asia/Hong_Kong">Asia/Hong_Kong (香港)</option>
+                  <option value="Asia/Tokyo">Asia/Tokyo (东京)</option>
+                  <option value="Asia/Singapore">Asia/Singapore (新加坡)</option>
+                  <option value="America/New_York">America/New_York (纽约)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (洛杉矶)</option>
+                  <option value="America/Chicago">America/Chicago (芝加哥)</option>
+                  <option value="Europe/London">Europe/London (伦敦)</option>
+                  <option value="Europe/Paris">Europe/Paris (巴黎)</option>
+                  <option value="Europe/Berlin">Europe/Berlin (柏林)</option>
+                  <option value="Australia/Sydney">Australia/Sydney (悉尼)</option>
+                  <option value="UTC">UTC (协调世界时)</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-400 dark:text-dark-text-muted">
+                  {t("cron.timezoneHint")}
+                </p>
               </div>
 
               {/* 投递提示 */}
               <div className="px-3 py-2.5 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Send className="w-4 h-4 text-gray-400 dark:text-dark-text-muted flex-shrink-0 mt-0.5" />
+                  <MessageSquare className="w-4 h-4 text-gray-400 dark:text-dark-text-muted flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-gray-500 dark:text-dark-text-muted leading-relaxed">
                     {t("cron.deliverHint")}
                   </p>

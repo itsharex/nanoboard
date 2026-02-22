@@ -99,6 +99,7 @@ export interface McpServer {
   env?: Record<string, string>;
   // HTTP 模式
   url?: string;
+  headers?: Record<string, string>;  // 自定义 HTTP headers (用于认证)
   // 通用配置
   disabled?: boolean;
 }

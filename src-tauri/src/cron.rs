@@ -201,9 +201,7 @@ pub async fn cron_add(
     message: String,
     schedule_type: String,
     schedule_value: String,
-    deliver: Option<bool>,
-    to: Option<String>,
-    channel: Option<String>,
+    tz: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if name.trim().is_empty() {
         return Ok(json!({
@@ -247,19 +245,10 @@ pub async fn cron_add(
         }
     }
 
-    if deliver.unwrap_or(false) {
-        args.push("--deliver".to_string());
-    }
-    if let Some(ref to_val) = to {
-        if !to_val.trim().is_empty() {
-            args.push("--to".to_string());
-            args.push(to_val.clone());
-        }
-    }
-    if let Some(ref ch) = channel {
-        if !ch.trim().is_empty() {
-            args.push("--channel".to_string());
-            args.push(ch.clone());
+    if let Some(ref tz_val) = tz {
+        if !tz_val.trim().is_empty() {
+            args.push("--tz".to_string());
+            args.push(tz_val.clone());
         }
     }
 
@@ -381,9 +370,7 @@ pub async fn cron_update(
     schedule_type: String,
     schedule_value: String,
     enabled: Option<bool>,
-    deliver: Option<bool>,
-    to: Option<String>,
-    channel: Option<String>,
+    tz: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if job_id.trim().is_empty() {
         return Ok(json!({
@@ -466,17 +453,13 @@ pub async fn cron_update(
         }
     }
 
-    // 更新 payload
+    // 更新时区
+    if let Some(ref tz_val) = tz {
+        job.schedule.tz = if tz_val.trim().is_empty() { None } else { Some(tz_val.trim().to_string()) };
+    }
+
+    // 更新 payload message
     job.payload.message = message.trim().to_string();
-    if let Some(d) = deliver {
-        job.payload.deliver = d;
-    }
-    if let Some(ref c) = channel {
-        job.payload.channel = if c.trim().is_empty() { None } else { Some(c.trim().to_string()) };
-    }
-    if let Some(ref t) = to {
-        job.payload.to = if t.trim().is_empty() { None } else { Some(t.trim().to_string()) };
-    }
 
     // 保存文件
     match save_jobs_file(&jobs_file) {

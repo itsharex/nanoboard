@@ -67,13 +67,13 @@ export default function ConfigOverviewCards({ config }: ConfigOverviewCardsProps
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-dark-text-muted">{t("dashboard.maxTokens")}</span>
               <span className="text-xs font-medium text-gray-700 dark:text-dark-text-secondary">
-                {config.agents.defaults.max_tokens || '-'}
+                {config.agents.defaults.maxTokens || '-'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 dark:text-dark-text-muted">{t("dashboard.maxToolIterations")}</span>
               <span className="text-xs font-medium text-gray-700 dark:text-dark-text-secondary">
-                {config.agents.defaults.max_tool_iterations || '-'}
+                {config.agents.defaults.maxToolIterations || '-'}
               </span>
             </div>
             <div className="flex items-center justify-between">

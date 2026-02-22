@@ -55,6 +55,12 @@ import CodeEditorView from "@/components/config/CodeEditorView";
 
 const TEMPLATES_STORAGE_KEY = "nanobot_config_templates";
 const PROVIDER_AGENT_CONFIGS_KEY = "nanoboard_provider_agent_configs";
+const MCP_SERVERS_STORAGE_KEY = "nanoboard_mcp_servers";
+
+// MCP Server 配置（包含 disabled 字段用于 UI 状态管理）
+interface McpServerWithState extends McpServer {
+  disabled?: boolean;
+}
 
 // 图标映射组件
 const ProviderIcon = ({ name, className }: { name: string; className?: string }) => {
@@ -100,6 +106,7 @@ export default function ConfigEditor() {
     return localStorage.getItem("selectedProviderId");
   });
   const [providerAgentConfigs, setProviderAgentConfigs] = useState<Record<string, ProviderAgentConfig>>({});
+  const [mcpServersConfig, setMcpServersConfig] = useState<Record<string, McpServerWithState>>({});
 
 
   const [showHistory, setShowHistory] = useState(false);
@@ -172,6 +179,30 @@ export default function ConfigEditor() {
         // 同步更新代码编辑器状态
         setOriginalConfig(loadedConfig);
         setCode(JSON.stringify(loadedConfig, null, 2));
+
+        // 初始化 MCP 服务器配置：合并 config.json 和 localStorage
+        const savedMcpConfig = loadMcpServersConfig();
+        const configMcpServers = loadedConfig.tools?.mcpServers || {};
+
+        // 合并：config.json 中的服务器为启用状态，localStorage 中保存的禁用状态
+        const mergedMcpConfig: Record<string, McpServerWithState> = {};
+
+        // 先添加 localStorage 中保存的服务器（确保有 disabled 字段）
+        for (const [serverId, server] of Object.entries(savedMcpConfig)) {
+          mergedMcpConfig[serverId] = {
+            ...server,
+            disabled: server.disabled === true // 明确设置为 true 或 false
+          };
+        }
+
+        // 再添加 config.json 中的服务器（标记为启用）
+        for (const [serverId, server] of Object.entries(configMcpServers)) {
+          // 只有当 localStorage 中没有这个服务器时才添加（说明是启用的）
+          if (!mergedMcpConfig[serverId]) {
+            mergedMcpConfig[serverId] = { ...server, disabled: false };
+          }
+        }
+        setMcpServersConfig(mergedMcpConfig);
         }
     } catch (error) {
       toast.showError(t("config.loadConfigFailed"));
@@ -197,6 +228,29 @@ export default function ConfigEditor() {
       localStorage.setItem(PROVIDER_AGENT_CONFIGS_KEY, JSON.stringify(data ?? providerAgentConfigs));
     } catch (error) {
       console.error(t("config.saveProviderAgentConfigFailed"), error);
+    }
+  }
+
+  // 加载 MCP 服务器配置（从 localStorage）
+  function loadMcpServersConfig() {
+    try {
+      const saved = localStorage.getItem(MCP_SERVERS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed as Record<string, McpServerWithState>;
+      }
+    } catch (error) {
+      console.error("Failed to load MCP servers config:", error);
+    }
+    return {};
+  }
+
+  // 保存 MCP 服务器配置（到 localStorage）
+  function saveMcpServersConfig(data: Record<string, McpServerWithState>) {
+    try {
+      localStorage.setItem(MCP_SERVERS_STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Failed to save MCP servers config:", error);
     }
   }
 
@@ -280,10 +334,37 @@ export default function ConfigEditor() {
 
   async function applyProviderAgentConfig(providerId: string) {
     const agentConfig = getProviderAgentConfig(providerId);
+    const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === providerId);
+
+    // 如果该 provider 没有保存过配置，使用默认值初始化
+    let configToApply = agentConfig;
     if (Object.keys(agentConfig).length === 0) {
-      toast.showInfo(t("config.noProviderAgentConfig"));
-      return;
+      // 使用 provider 的默认配置初始化
+      configToApply = {
+        model: providerInfo?.defaultModel || "",
+        max_tokens: 8192,
+        max_tool_iterations: 20,
+        memory_window: 50,
+        temperature: 0.7,
+        workspace: "~/.nanobot/workspace",
+      };
+      // 同时保存到 localStorage，这样下次切换时就有配置了
+      const updatedConfigs = {
+        ...providerAgentConfigs,
+        [providerId]: configToApply,
+      };
+      setProviderAgentConfigs(updatedConfigs);
+      saveProviderAgentConfigs(updatedConfigs);
     }
+
+    // 将 snake_case (localStorage) 转换为 camelCase (config.json)
+    const camelCaseConfig: Record<string, any> = {};
+    if (configToApply.model !== undefined) camelCaseConfig.model = configToApply.model;
+    if (configToApply.max_tokens !== undefined) camelCaseConfig.maxTokens = configToApply.max_tokens;
+    if (configToApply.max_tool_iterations !== undefined) camelCaseConfig.maxToolIterations = configToApply.max_tool_iterations;
+    if (configToApply.memory_window !== undefined) camelCaseConfig.memoryWindow = configToApply.memory_window;
+    if (configToApply.temperature !== undefined) camelCaseConfig.temperature = configToApply.temperature;
+    if (configToApply.workspace !== undefined) camelCaseConfig.workspace = configToApply.workspace;
 
     // 更新 config.agents.defaults
     const updatedConfig = {
@@ -292,13 +373,13 @@ export default function ConfigEditor() {
         ...config.agents,
         defaults: {
           ...config.agents?.defaults,
-          ...agentConfig,
+          ...camelCaseConfig,
         },
       },
     };
     setConfig(updatedConfig);
     setSelectedProviderId(providerId); // 标记为已选择
-    const providerName = AVAILABLE_PROVIDERS.find(p => p.id === providerId)?.id || providerId;
+    const providerName = providerInfo?.id || providerId;
     toast.showSuccess(t("config.applyProviderConfig", { name: providerName }));
 
     // 自动保存
@@ -366,6 +447,23 @@ export default function ConfigEditor() {
         cleaned.channels[key] = cleanedChannel;
       }
     }
+
+    // 清理 tools.mcpServers - 只保存启用的服务器（使用 mcpServersConfig 判断）
+    const enabledServers: Record<string, McpServer> = {};
+    for (const [serverId, server] of Object.entries(mcpServersConfig)) {
+      // 只保存启用的服务器（disabled 不为 true）
+      if (!server.disabled) {
+        // 移除 disabled 字段后保存
+        const { disabled, ...serverWithoutDisabled } = server;
+        enabledServers[serverId] = serverWithoutDisabled;
+      }
+    }
+
+    // 始终设置 tools.mcpServers（即使为空对象）
+    cleaned.tools = {
+      ...config.tools,
+      mcpServers: enabledServers,
+    };
 
     return cleaned;
   }
@@ -550,13 +648,23 @@ export default function ConfigEditor() {
 
   // MCP Server 相关函数
   async function saveMcpServer(serverId: string, server: McpServer) {
+    // 更新 localStorage 中的配置（新添加的服务器默认启用）
+    const serverWithState: McpServerWithState = { ...server, disabled: false };
+    const updatedMcpConfig = {
+      ...mcpServersConfig,
+      [serverId]: serverWithState,
+    };
+    setMcpServersConfig(updatedMcpConfig);
+    saveMcpServersConfig(updatedMcpConfig);
+
+    // 更新 config（用于保存到 config.json）
     const updatedConfig = {
       ...config,
       tools: {
         ...config.tools,
         mcpServers: {
           ...config.tools?.mcpServers,
-          [serverId]: server,
+          [serverId]: serverWithState,
         },
       },
     };
@@ -573,7 +681,54 @@ export default function ConfigEditor() {
     }
   }
 
+  // 切换 MCP Server 启用/禁用状态
+  async function toggleMcpServer(serverId: string) {
+    const currentServer = mcpServersConfig[serverId];
+    if (!currentServer) return;
+
+    const newDisabled = !currentServer.disabled;
+    const updatedServer: McpServerWithState = { ...currentServer, disabled: newDisabled };
+
+    // 更新 localStorage
+    const updatedMcpConfig = {
+      ...mcpServersConfig,
+      [serverId]: updatedServer,
+    };
+    setMcpServersConfig(updatedMcpConfig);
+    saveMcpServersConfig(updatedMcpConfig);
+
+    // 更新 config
+    const updatedConfig = {
+      ...config,
+      tools: {
+        ...config.tools,
+        mcpServers: {
+          ...config.tools?.mcpServers,
+          [serverId]: updatedServer,
+        },
+      },
+    };
+    setConfig(updatedConfig);
+
+    try {
+      const configToSave = cleanConfigForSave(updatedConfig);
+      await configApi.save(configToSave);
+      setOriginalConfig(updatedConfig);
+      setCode(JSON.stringify(updatedConfig, null, 2));
+      toast.showSuccess(newDisabled ? t("mcp.serverDisabled") : t("mcp.serverEnabled"));
+    } catch (error) {
+      toast.showError(t("config.autoSaveFailed"));
+    }
+  }
+
   async function deleteMcpServer(serverId: string) {
+    // 从 localStorage 删除
+    const updatedMcpConfig = { ...mcpServersConfig };
+    delete updatedMcpConfig[serverId];
+    setMcpServersConfig(updatedMcpConfig);
+    saveMcpServersConfig(updatedMcpConfig);
+
+    // 从 config 删除
     const currentServers = { ...config.tools?.mcpServers };
     delete currentServers[serverId];
 
@@ -1173,18 +1328,18 @@ export default function ConfigEditor() {
                   </button>
                 </div>
 
-                {config.tools?.mcpServers && Object.keys(config.tools.mcpServers).length > 0 ? (
+                {Object.keys(mcpServersConfig).length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Object.entries(config.tools.mcpServers).map(([serverId, server]) => {
-                      const isEnabled = !server.disabled;
+                    {Object.entries(mcpServersConfig).map(([serverId, server]) => {
                       const isHttpMode = !!server.url;
+                      const isEnabled = !server.disabled;
                       return (
                         <div
                           key={serverId}
                           className={`group rounded-lg border transition-all hover:shadow-md ${
                             isEnabled
                               ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-500/50"
-                              : "bg-white dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle hover:border-gray-300 dark:hover:border-dark-border-default"
+                              : "bg-gray-50 dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle"
                           }`}
                         >
                           <div className="w-full p-4 text-left">
@@ -1200,11 +1355,15 @@ export default function ConfigEditor() {
                                   })
                                 }
                               >
-                                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                                <div className={`p-2 rounded-lg ${
+                                  isEnabled
+                                    ? "bg-emerald-100 dark:bg-emerald-900/30"
+                                    : "bg-gray-100 dark:bg-dark-bg-hover"
+                                }`}>
                                   {isHttpMode ? (
-                                    <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    <Globe className={`w-5 h-5 ${isEnabled ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-dark-text-muted"}`} />
                                   ) : (
-                                    <Terminal className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    <Terminal className={`w-5 h-5 ${isEnabled ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-dark-text-muted"}`} />
                                   )}
                                 </div>
                                 <div>
@@ -1212,12 +1371,11 @@ export default function ConfigEditor() {
                                     <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary text-sm">
                                       {serverId}
                                     </h3>
-                                    {isEnabled && (
+                                    {isEnabled ? (
                                       <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs rounded-full">
                                         {t("config.enabled")}
                                       </span>
-                                    )}
-                                    {!isEnabled && (
+                                    ) : (
                                       <span className="px-2 py-0.5 bg-gray-100 dark:bg-dark-bg-hover text-gray-600 dark:text-dark-text-muted text-xs rounded-full">
                                         {t("config.notEnabled")}
                                       </span>
@@ -1231,9 +1389,7 @@ export default function ConfigEditor() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // 切换 disabled 状态
-                                  const updatedServer = { ...server, disabled: isEnabled };
-                                  saveMcpServer(serverId, updatedServer);
+                                  toggleMcpServer(serverId);
                                 }}
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                                   isEnabled ? "bg-blue-600" : "bg-gray-300 dark:bg-dark-border-default"

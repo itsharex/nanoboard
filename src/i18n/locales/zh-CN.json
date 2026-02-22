@@ -223,14 +223,14 @@
     "apiBaseUrlDefault": "默认值: {{url}}",
     "getApiKeyAt": "在 {{url}} 获取 API Key",
     "deleteConfig": "删除配置",
-    "model": "默认模型 (model)",
+    "model": "默认模型",
     "modelPlaceholder": "例如: anthropic/claude-opus-4-5",
     "modelDesc": "agent 使用的默认 LLM 模型",
-    "maxTokens": "最大 Token 数 (max_tokens)",
+    "maxTokens": "最大 Token 数",
     "maxTokensDesc": "单次请求的最大 token 数量",
-    "maxToolIterations": "最大工具迭代次数 (max_tool_iterations)",
+    "maxToolIterations": "最大工具迭代次数",
     "maxToolIterationsDesc": "agent 执行工具的最大迭代次数",
-    "workspace": "工作区路径 (workspace)",
+    "workspace": "工作区路径",
     "workspacePlaceholder": "~/.nanobot/workspace",
     "workspaceDesc": "agent 工作区的默认路径",
     "temperature": "温度 (temperature) (0.0 - 2.0)",
@@ -257,7 +257,8 @@
         "difficulty": "简单",
         "description": "推荐，只需要 bot token",
         "tokenPlaceholder": "从 @BotFather 获取",
-        "allowFromPlaceholder": "留空允许所有人，或输入用户ID，用逗号分隔"
+        "allowFromPlaceholder": "留空允许所有人，或输入用户ID，用逗号分隔",
+        "replyToMessageLabel": "回复原消息"
       },
       "discord": {
         "difficulty": "简单",
@@ -643,7 +644,8 @@
     "vllm": "vLLM",
     "siliconflow": "SiliconFlow",
     "githubCopilot": "GitHub Copilot",
-    "openaiCodex": "OpenAI Codex"
+    "openaiCodex": "OpenAI Codex",
+    "volcengine": "火山引擎"
   },
   "mcp": {
     "title": "MCP 服务器",
@@ -665,10 +667,14 @@
     "envDesc": "每行一个，格式: KEY=value",
     "url": "URL",
     "urlDesc": "MCP 服务器的 SSE 端点地址",
+    "headers": "HTTP Headers",
+    "headersDesc": "自定义 HTTP 请求头，用于认证。每行一个，格式: Header-Name: value",
     "disabled": "已禁用",
     "add": "添加",
     "serverSaved": "MCP 服务器配置已保存",
     "serverSaveFailed": "保存 MCP 服务器配置失败",
+    "serverEnabled": "MCP 服务器已启用",
+    "serverDisabled": "MCP 服务器已禁用",
     "serverDeleted": "MCP 服务器已删除",
     "serverDeleteFailed": "删除 MCP 服务器失败"
   },
@@ -800,7 +806,10 @@
       "everyNSeconds": "每 {{n}} 秒",
       "everyNHours": "每 {{n}} 小时",
       "everyNDays": "每 {{n}} 天"
-    }
+    },
+    "timezone": "时区",
+    "timezoneDefault": "使用系统时区",
+    "timezoneHint": "留空则使用系统时区，选择时区后任务将按该时区执行"
   },
   "workspace": {
     "title": "工作区",
