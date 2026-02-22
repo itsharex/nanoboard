@@ -642,7 +642,7 @@
   },
   "mcp": {
     "title": "MCP Servers",
-    "description": "Configure Model Context Protocol (MCP) servers to provide additional tools for agents",
+    "description": "Configure MCP servers (recommended to add via conversation with nanobot)",
     "addServer": "Add MCP Server",
     "editServer": "Edit {{name}}",
     "deleteServer": "Delete Server",

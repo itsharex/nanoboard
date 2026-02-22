@@ -1366,24 +1366,24 @@ export default function ConfigEditor() {
                                     <Terminal className={`w-5 h-5 ${isEnabled ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-dark-text-muted"}`} />
                                   )}
                                 </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary text-sm">
-                                      {serverId}
-                                    </h3>
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary text-sm truncate" title={serverId}>
+                                    {serverId}
+                                  </h3>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <p className="text-xs text-gray-500 dark:text-dark-text-muted">
+                                      {isHttpMode ? t("mcp.http") : t("mcp.stdio")}
+                                    </p>
                                     {isEnabled ? (
-                                      <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs rounded-full">
+                                      <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs rounded-full whitespace-nowrap">
                                         {t("config.enabled")}
                                       </span>
                                     ) : (
-                                      <span className="px-2 py-0.5 bg-gray-100 dark:bg-dark-bg-hover text-gray-600 dark:text-dark-text-muted text-xs rounded-full">
+                                      <span className="px-2 py-0.5 bg-gray-100 dark:bg-dark-bg-hover text-gray-600 dark:text-dark-text-muted text-xs rounded-full whitespace-nowrap">
                                         {t("config.notEnabled")}
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-0.5">
-                                    {isHttpMode ? t("mcp.http") : t("mcp.stdio")}
-                                  </p>
                                 </div>
                               </div>
                               <button

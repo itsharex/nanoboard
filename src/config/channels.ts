@@ -102,12 +102,6 @@ export const CHANNELS_CONFIG: ChannelInfo[] = [
       { name: "allowFrom", labelKey: "config.channels.email.allowFromLabel", type: "text", placeholderKey: "config.channels.email.allowFromPlaceholder" },
     ],
   },
-  {
-    key: "terminal",
-    nameKey: "channels.terminal",
-    colorClass: "bg-gray-50 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400",
-    fields: [],
-  },
 ];
 
 // 根据 key 获取 Channel 信息

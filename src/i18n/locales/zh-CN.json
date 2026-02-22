@@ -649,7 +649,7 @@
   },
   "mcp": {
     "title": "MCP 服务器",
-    "description": "配置 Model Context Protocol (MCP) 服务器，为 Agent 提供额外的工具能力",
+    "description": "配置 MCP 服务器（建议直接与 nanobot 对话完成添加）",
     "addServer": "添加 MCP 服务器",
     "editServer": "编辑 {{name}}",
     "deleteServer": "删除服务器",

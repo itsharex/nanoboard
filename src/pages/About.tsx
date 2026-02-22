@@ -401,7 +401,7 @@ function DiagnosticResultPanel({
         onClick={onClose}
         className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-gray-900 dark:hover:text-dark-text-primary transition-colors"
       >
-        {t("dashboard.closeDiagnosticResult")}
+        {t("dashboard.closeDiagnosisResult")}
       </button>
     </div>
   );
