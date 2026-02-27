@@ -135,3 +135,21 @@ export const cronApi = {
   enable: (jobId: string, disable: boolean) => invoke<CronOperationResult>("cron_enable", { jobId, disable }),
   run: (jobId: string) => invoke<CronOperationResult>("cron_run", { jobId }),
 };
+
+// ClawHub API
+import type {
+  ClawHubSearchResponse,
+  ClawHubSkillsResponse,
+  SkillDetailResponse,
+} from "@/types/clawhub";
+
+export const clawhubApi = {
+  search: (query: string, limit?: number) =>
+    invoke<ClawHubSearchResponse>("search_clawhub_skills", { query, limit }),
+  getSkills: (sort?: string, limit?: number, cursor?: string) =>
+    invoke<ClawHubSkillsResponse>("get_clawhub_skills", { sort, limit, cursor }),
+  getSkillDetail: (slug: string) =>
+    invoke<SkillDetailResponse>("get_clawhub_skill_detail", { slug }),
+  getSkillFile: (slug: string, path: string, version?: string) =>
+    invoke<string>("get_clawhub_skill_file", { slug, path, version }),
+};

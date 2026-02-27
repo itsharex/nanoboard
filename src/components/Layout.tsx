@@ -15,6 +15,7 @@ import {
   ChevronRight,
   FolderTree,
   Info,
+  Puzzle,
 } from "lucide-react";
 import { processApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
@@ -51,6 +52,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/", label: t("nav.dashboard"), icon: LayoutDashboard },
     { path: "/logs", label: t("nav.logs"), icon: ScrollText },
     { path: "/workspace", label: t("nav.workspace"), icon: FolderTree },
+    { path: "/skills", label: t("nav.skills"), icon: Puzzle },
     { path: "/config", label: t("nav.config"), icon: Settings },
     { path: "/about", label: t("nav.about"), icon: Info },
   ];

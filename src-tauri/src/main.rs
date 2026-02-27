@@ -11,6 +11,7 @@ mod session;
 mod theme;
 mod menu;
 mod cron;
+mod clawhub;
 
 use std::sync::Mutex;
 use std::sync::Arc;
@@ -132,6 +133,11 @@ async fn main() {
             cron::cron_remove,
             cron::cron_enable,
             cron::cron_run,
+            // ClawHub commands
+            clawhub::search_clawhub_skills,
+            clawhub::get_clawhub_skills,
+            clawhub::get_clawhub_skill_detail,
+            clawhub::get_clawhub_skill_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
