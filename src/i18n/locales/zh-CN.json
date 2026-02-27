@@ -238,6 +238,7 @@
     "temperatureDesc": "控制生成文本的随机性，越高越随机",
     "done": "完成",
     "applyProviderConfig": "已应用 {{name}} 的 Agent 配置",
+    "independentAgentConfigHint": "此配置独立于其他提供商。点击提供商卡片或完成编辑后，将自动应用该配置。",
     "noProviderAgentConfig": "该提供商没有保存的 Agent 配置",
     "messageChannels": "消息渠道",
     "selectChannel": "选择要配置的消息渠道：",

@@ -58,6 +58,8 @@ import CodeEditorView from "@/components/config/CodeEditorView";
 
 const TEMPLATES_STORAGE_KEY = "nanobot_config_templates";
 const MCP_SERVERS_STORAGE_KEY = "nanoboard_mcp_servers";
+// 每个 Provider 独立的 Agent 配置存储 key
+const PROVIDER_AGENT_CONFIGS_KEY = "nanoboard_provider_agent_configs";
 
 // MCP Server 配置（包含 disabled 字段用于 UI 状态管理）
 interface McpServerWithState extends McpServer {
@@ -350,76 +352,83 @@ export default function ConfigEditor() {
     }
   }
 
-  // 从 config.agents.defaults 获取 Agent 配置，转换为 snake_case 格式用于 UI
-  function getProviderAgentConfig(_providerId: string): ProviderAgentConfig {
-    const defaults = config.agents?.defaults;
-    if (!defaults) return {};
-
-    // 将 camelCase 转换为 snake_case
-    const snakeCaseConfig: ProviderAgentConfig = {};
-    if (defaults.model !== undefined) snakeCaseConfig.model = defaults.model;
-    if (defaults.maxTokens !== undefined) snakeCaseConfig.max_tokens = defaults.maxTokens;
-    if (defaults.maxToolIterations !== undefined) snakeCaseConfig.max_tool_iterations = defaults.maxToolIterations;
-    if (defaults.memoryWindow !== undefined) snakeCaseConfig.memory_window = defaults.memoryWindow;
-    if (defaults.temperature !== undefined) snakeCaseConfig.temperature = defaults.temperature;
-    if (defaults.workspace !== undefined) snakeCaseConfig.workspace = defaults.workspace;
-
-    return snakeCaseConfig;
+  // 从 localStorage 获取每个 Provider 独立的 Agent 配置
+  function getProviderAgentConfigs(): Record<string, ProviderAgentConfig> {
+    try {
+      const saved = localStorage.getItem(PROVIDER_AGENT_CONFIGS_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load provider agent configs:", e);
+    }
+    return {};
   }
 
-  // 更新 Agent 配置，直接更新 config.agents.defaults
-  async function updateProviderAgentConfig(providerId: string, field: keyof ProviderAgentConfig, value: any) {
-    // 将 snake_case 字段名转换为 camelCase
-    const camelCaseField = field.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  // 保存每个 Provider 独立的 Agent 配置到 localStorage
+  function saveProviderAgentConfigs(configs: Record<string, ProviderAgentConfig>) {
+    try {
+      localStorage.setItem(PROVIDER_AGENT_CONFIGS_KEY, JSON.stringify(configs));
+    } catch (e) {
+      console.error("Failed to save provider agent configs:", e);
+    }
+  }
 
-    const updatedConfig = {
-      ...config,
-      agents: {
-        ...config.agents,
-        defaults: {
-          ...config.agents?.defaults,
-          provider: providerId,
-          [camelCaseField]: value,
-        },
-      },
+  // 获取指定 Provider 的 Agent 配置（从独立存储中获取）
+  function getProviderAgentConfig(providerId: string): ProviderAgentConfig {
+    const configs = getProviderAgentConfigs();
+    const providerConfig = configs[providerId];
+
+    if (providerConfig) {
+      return providerConfig;
+    }
+
+    // 如果该 Provider 没有独立配置，返回推荐的默认配置
+    const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === providerId);
+    return {
+      model: providerInfo?.defaultModel || "",
+      max_tokens: 8192,
+      max_tool_iterations: 20,
+      memory_window: 50,
+      temperature: 0.7,
+      workspace: "~/.nanobot/workspace",
+    };
+  }
+
+  // 更新 Provider 的独立 Agent 配置（保存到 localStorage）
+  function updateProviderAgentConfig(providerId: string, field: keyof ProviderAgentConfig, value: any) {
+    const configs = getProviderAgentConfigs();
+    const currentConfig = configs[providerId] || {};
+
+    // 更新指定字段
+    configs[providerId] = {
+      ...currentConfig,
+      [field]: value,
     };
 
-    setConfig(updatedConfig);
-    setSelectedProviderId(providerId);
+    // 保存到 localStorage
+    saveProviderAgentConfigs(configs);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 强制重新渲染以更新 UI
+    setConfig({ ...config });
   }
 
   // 应用 Provider 的 Agent 配置到 config.agents.defaults
   async function applyProviderAgentConfig(providerId: string, _updateDefaultProvider: boolean = false) {
     const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === providerId);
-    const currentDefaults = config.agents?.defaults || {};
 
-    // 推荐的配置值
-    const recommendedConfig = {
-      model: providerInfo?.defaultModel || "",
-      maxTokens: 8192,
-      maxToolIterations: 20,
-      memoryWindow: 50,
-      temperature: 0.7,
-      workspace: "~/.nanobot/workspace",
-    };
+    // 从 localStorage 获取该 Provider 的独立配置
+    const providerAgentConfig = getProviderAgentConfig(providerId);
 
-    // 合并配置：推荐值 + 用户已设置的值
+    // 将 snake_case 转换为 camelCase 并构建 defaults
     const mergedConfig = {
-      ...recommendedConfig,
-      ...currentDefaults,
-      provider: providerId,  // 总是更新 provider
-      // 如果用户没有设置 model，使用推荐的 model
-      model: currentDefaults.model || recommendedConfig.model,
+      provider: providerId,
+      model: providerAgentConfig.model || providerInfo?.defaultModel || "",
+      maxTokens: providerAgentConfig.max_tokens || 8192,
+      maxToolIterations: providerAgentConfig.max_tool_iterations ?? 20,
+      memoryWindow: providerAgentConfig.memory_window ?? 50,
+      temperature: providerAgentConfig.temperature ?? 0.7,
+      workspace: providerAgentConfig.workspace || "~/.nanobot/workspace",
     };
 
     const updatedConfig = {
@@ -1248,6 +1257,8 @@ export default function ConfigEditor() {
                     const oauthStatus = isOAuth ? oauthTokenStatuses[provider.id] : undefined;
                     const isOAuthLoggedIn = oauthStatus === true;
                     const isOAuthExpired = oauthStatus === "expired";
+                    // 获取该 Provider 的独立配置
+                    const providerAgentCfg = getProviderAgentConfig(provider.id);
 
                     return (
                       <div
@@ -1276,8 +1287,8 @@ export default function ConfigEditor() {
                               <div className={`p-2 rounded-lg ${provider.colorClass.split(' text-')[0]}`}>
                                 <ProviderIcon name={provider.icon} className={`w-5 h-5 ${'text-' + provider.colorClass.split(' text-')[1]}`} />
                               </div>
-                              <div>
-                                <div className="flex items-center gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary text-sm">
                                     {t(provider.nameKey)}
                                   </h3>
@@ -1307,6 +1318,12 @@ export default function ConfigEditor() {
                                     </span>
                                   )}
                                 </div>
+                                {/* 显示配置的模型 */}
+                                {providerAgentCfg.model && (
+                                  <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-1 truncate font-mono">
+                                    {providerAgentCfg.model}
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <button

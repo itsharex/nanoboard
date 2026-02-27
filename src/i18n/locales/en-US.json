@@ -230,6 +230,7 @@
     "temperatureDesc": "Control the randomness of generated text, higher is more random",
     "done": "Done",
     "applyProviderConfig": "Applied {{name}} agent config",
+    "independentAgentConfigHint": "This config is independent for this provider. Click the provider card or finish editing to apply it.",
     "noProviderAgentConfig": "This provider has no saved agent config",
     "messageChannels": "Message Channels",
     "selectChannel": "Select a message channel to configure:",

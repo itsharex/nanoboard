@@ -381,6 +381,12 @@ export default function ProviderEditModal({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* 独立配置提示 */}
+              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-500/30">
+                <p className="text-xs text-purple-700 dark:text-purple-300">
+                  {t("config.independentAgentConfigHint")}
+                </p>
+              </div>
               <div>
                 <label className="block text-sm text-gray-600 dark:text-dark-text-secondary mb-1">
                   {t("config.model")}
