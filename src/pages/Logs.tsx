@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { loggerApi, events } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
 import { Play, Square, Search, X, Inbox, Download, BarChart3, Regex } from "lucide-react";
 import EmptyState from "../components/EmptyState";
+import { Virtuoso } from "react-virtuoso";
 
 interface LogStatistics {
   total: number;
@@ -48,7 +49,6 @@ function getLogLevelColor(log: string): string {
 export default function Logs() {
   const { t } = useTranslation();
   const [logs, setLogs] = useState<string[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   // 从 localStorage 初始化 streaming 状态，避免切换页面时状态不一致
   const [streaming, setStreaming] = useState(() => localStorage.getItem("logStreaming") === "true");
@@ -57,7 +57,8 @@ export default function Logs() {
   const [regexError, setRegexError] = useState<string | null>(null);
   const [logLevel, setLogLevel] = useState<"all" | "debug" | "info" | "warn" | "error">("all");
   const [showStatistics, setShowStatistics] = useState(false);
-  const [statistics, setStatistics] = useState<LogStatistics>({
+  // 统计信息已移至 useMemo 计算，这里保留状态用于类型兼容
+  const [_stats, _setStats] = useState<LogStatistics>({
     total: 0,
     debug: 0,
     info: 0,
@@ -68,7 +69,6 @@ export default function Logs() {
     warnPercent: 0,
     errorPercent: 0,
   });
-  const logContainerRef = useRef<HTMLDivElement>(null);
   // 使用 useRef 存储取消监听函数，避免内存泄漏
   const unlistenRef = useRef<(() => void) | null>(null);
   const toast = useToast();
@@ -170,40 +170,41 @@ export default function Logs() {
     }
   }
 
-  // 应用过滤 - 当日志、搜索条件或级别改变时重新过滤
-  useEffect(() => {
+  // 使用 useMemo 优化过滤逻辑，避免不必要的重新计算
+  const filteredLogs = useMemo(() => {
     let filtered = logs;
-    if (searchQuery) {
+    
+    // 应用搜索过滤
+    if (searchQuery.trim()) {
       if (useRegex) {
         try {
           const regex = new RegExp(searchQuery, "i");
           filtered = filtered.filter((log) => regex.test(log));
           setRegexError(null);
-        } catch {
-          setRegexError(t("logs.invalidRegex"));
-          filtered = [];
+        } catch (error) {
+          setRegexError(error instanceof Error ? error.message : t("logs.invalidRegex"));
+          // 正则表达式无效时，返回空结果
+          return [];
         }
       } else {
-        filtered = filtered.filter((log) =>
-          log.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter((log) => log.toLowerCase().includes(query));
       }
     } else {
       setRegexError(null);
     }
 
+    // 应用级别过滤
     if (logLevel !== "all") {
       filtered = filtered.filter((log) => LOG_LEVEL_PATTERNS[logLevel].test(log));
     }
 
-    setFilteredLogs(filtered);
-    setStatistics(calculateStatistics(filtered));
-  }, [logs, searchQuery, useRegex, logLevel]);
+    return filtered;
+  }, [logs, searchQuery, useRegex, logLevel, t]);
 
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
+  // 使用 useMemo 计算统计信息
+  const statistics = useMemo(() => {
+    return calculateStatistics(filteredLogs);
   }, [filteredLogs]);
 
   function calculateStatistics(logsToAnalyze: string[]): LogStatistics {
@@ -240,9 +241,7 @@ export default function Logs() {
       const result = await loggerApi.getLogs(500);
       const loadedLogs = result.logs || [];
       setLogs(loadedLogs);
-      setStatistics(calculateStatistics(loadedLogs));
-      // 应用当前的搜索和级别过滤
-      filterLogs(loadedLogs, searchQuery, logLevel);
+      // 统计信息由 useMemo 自动计算
     } catch (error) {
       toast.showError(t("logs.loadLogsFailed"));
     } finally {
@@ -250,60 +249,27 @@ export default function Logs() {
     }
   }
 
-  function filterLogs(logsToFilter: string[], query: string, level: "all" | "debug" | "info" | "warn" | "error") {
-    let filtered = logsToFilter;
-
-    // 应用搜索过滤
-    if (query.trim()) {
-      if (useRegex) {
-        // 使用正则表达式搜索
-        try {
-          const regex = new RegExp(query, "i");
-          filtered = filtered.filter((log) => regex.test(log));
-          setRegexError(null);
-        } catch (error) {
-          setRegexError(error instanceof Error ? error.message : t("logs.invalidRegex"));
-          // 正则表达式无效时，返回空结果
-          filtered = [];
-        }
-      } else {
-        // 使用普通字符串搜索
-        filtered = filtered.filter((log) =>
-          log.toLowerCase().includes(query.toLowerCase())
-        );
-        setRegexError(null);
-      }
-    } else {
-      setRegexError(null);
-    }
-
-    // 应用级别过滤
-    if (level !== "all") {
-      filtered = filtered.filter((log) => LOG_LEVEL_PATTERNS[level].test(log));
-    }
-
-    setFilteredLogs(filtered);
-  }
+  // 移除 filterLogs 函数，因为过滤逻辑已经移到 useMemo 中
+  // filterLogs 函数已废弃
 
   function handleSearchChange(value: string) {
     setSearchQuery(value);
-    filterLogs(logs, value, logLevel);
+    // 过滤逻辑由 useMemo 自动处理
   }
 
   function handleLevelChange(level: "all" | "debug" | "info" | "warn" | "error") {
     setLogLevel(level);
-    filterLogs(logs, searchQuery, level);
+    // 过滤逻辑由 useMemo 自动处理
   }
 
   function toggleRegexMode() {
-    const newMode = !useRegex;
-    setUseRegex(newMode);
-    filterLogs(logs, searchQuery, logLevel);
+    setUseRegex(prev => !prev);
+    // 过滤逻辑由 useMemo 自动处理
   }
 
   function clearSearch() {
     setSearchQuery("");
-    filterLogs(logs, "", logLevel);
+    // 过滤逻辑由 useMemo 自动处理
   }
 
   async function exportLogs() {
@@ -640,38 +606,37 @@ export default function Logs() {
         </div>
       )}
 
-      {/* 日志内容 */}
-      <div
-        ref={logContainerRef}
-        className="flex-1 overflow-y-auto bg-gray-50 dark:bg-dark-bg-sidebar p-4 font-mono text-sm scrollbar-thin transition-colors duration-200"
-      >
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-dark-text-muted">
-            {t("config.loading")}
-          </div>
-        ) : filteredLogs.length === 0 ? (
-          <EmptyState
-            icon={Inbox}
-            title={searchQuery ? t("logs.noMatchingLogs") : t("logs.noLogs")}
-            description={
-              searchQuery
-                ? t("logs.tryDifferentKeywords")
-                : t("logs.startNanobotForLogs")
-            }
-          />
-        ) : (
-          <div className="space-y-1">
-            {filteredLogs.map((log, index) => (
+      {/* 日志内容 - 使用虚拟滚动 */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-dark-bg-sidebar text-gray-500 dark:text-dark-text-muted">
+          {t("config.loading")}
+        </div>
+      ) : filteredLogs.length === 0 ? (
+        <EmptyState
+          icon={Inbox}
+          title={searchQuery ? t("logs.noMatchingLogs") : t("logs.noLogs")}
+          description={
+            searchQuery
+              ? t("logs.tryDifferentKeywords")
+              : t("logs.startNanobotForLogs")
+          }
+        />
+      ) : (
+        <div className="flex-1 overflow-hidden">
+          <Virtuoso
+            style={{ height: '100%' }}
+            data={filteredLogs}
+            itemContent={(_index, log) => (
               <div
-                key={index}
                 className={`hover:bg-white dark:hover:bg-dark-bg-card px-2 py-1 rounded whitespace-pre-wrap break-words border border-transparent hover:border-gray-200 dark:hover:border-dark-border-subtle transition-colors duration-200 ${getLogLevelColor(log)}`}
               >
                 {log}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )}
+            followOutput="smooth"
+          />
+        </div>
+      )}
 
       {/* 状态栏 */}
       <div className="bg-white dark:bg-dark-bg-card border-t border-gray-200 dark:border-dark-border-subtle px-4 py-2 flex items-center justify-between text-sm text-gray-500 dark:text-dark-text-muted transition-colors duration-200">
