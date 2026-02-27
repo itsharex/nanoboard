@@ -76,6 +76,9 @@ export interface Channel {
   maxMediaBytes?: number;
   groupAllowFrom?: string[];
   allowRoomMentions?: boolean;
+  // Channel behavior settings
+  sendProgress?: boolean;  // Send progress updates to channel
+  sendToolHints?: boolean;  // Send tool usage hints to channel
 }
 
 export interface Config {
