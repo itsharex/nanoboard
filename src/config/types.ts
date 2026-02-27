@@ -4,12 +4,13 @@
 
 export interface Provider {
   id?: string;
-  name: string;
+  name?: string;  // 仅用于 UI 显示，不保存到配置
   apiKey?: string;
   apiBase?: string;
   token?: string;  // OAuth provider 使用
   default_model?: string;  // 仅用于 UI 辅助，不保存到配置
   models?: string[];       // 仅用于 UI 辅助，不保存到配置
+  extraHeaders?: Record<string, string> | null;  // 额外的 HTTP headers
 }
 
 // 每个 Provider 独立的 Agent 配置（存储在 localStorage）
@@ -76,9 +77,6 @@ export interface Channel {
   maxMediaBytes?: number;
   groupAllowFrom?: string[];
   allowRoomMentions?: boolean;
-  // Channel behavior settings
-  sendProgress?: boolean;  // Send progress updates to channel
-  sendToolHints?: boolean;  // Send tool usage hints to channel
 }
 
 export interface Config {

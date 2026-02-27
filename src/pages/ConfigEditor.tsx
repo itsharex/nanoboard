@@ -455,36 +455,66 @@ export default function ConfigEditor() {
     }
   }
 
-  // 清理配置，移除仅用于 UI 的辅助字段
+  // 有效的 channel 名称列表（根据 nanobot 官方文档）
+  const VALID_CHANNELS = [
+    'telegram', 'discord', 'whatsapp', 'mochat', 'feishu',
+    'dingtalk', 'slack', 'qq', 'matrix', 'email'
+  ];
+
+  // 清理配置，移除仅用于 UI 的辅助字段，确保符合 nanobot 官方格式
   function cleanConfigForSave(config: Config): any {
     const cleaned: any = {
       ...config,
     };
 
-    // 清理 providers - 移除 UI 辅助字段、name 字段
+    // 清理 providers - 移除 UI 辅助字段、null 值
     if (config.providers) {
       cleaned.providers = {};
       for (const [key, provider] of Object.entries(config.providers)) {
         const { default_model, models, name, ...rest } = provider;
+
+        // 移除 null 值的字段
+        const cleanProvider: Record<string, any> = {};
+        for (const [k, v] of Object.entries(rest)) {
+          if (v !== null && v !== undefined) {
+            cleanProvider[k] = v;
+          }
+        }
 
         // 获取该提供商的默认 apiBase
         const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === key);
         const defaultApiBase = providerInfo?.apiBase;
 
         // 如果配置了 apiKey 但没有配置 apiBase，自动填充默认值并保存
-        if (rest.apiKey && !rest.apiBase && defaultApiBase) {
-          rest.apiBase = defaultApiBase;
+        if (cleanProvider.apiKey && !cleanProvider.apiBase && defaultApiBase) {
+          cleanProvider.apiBase = defaultApiBase;
         }
 
-        cleaned.providers[key] = rest;
+        // 只保存有实际配置的 provider（至少有 apiKey 或 token）
+        if (cleanProvider.apiKey || cleanProvider.token || Object.keys(cleanProvider).length > 0) {
+          cleaned.providers[key] = cleanProvider;
+        }
       }
     }
 
-    // 清理 channels - 将 allowFrom 字符串转换为列表
+    // 清理 channels - 确保只有有效的 channel 配置
     if (config.channels) {
       cleaned.channels = {};
       for (const [key, channel] of Object.entries(config.channels)) {
-        const cleanedChannel: any = { ...channel };
+        // 跳过非 channel 的键（如错误放置的 sendProgress, sendToolHints 等）
+        if (!VALID_CHANNELS.includes(key)) {
+          console.warn(`[cleanConfigForSave] Skipping invalid channel key: ${key}`);
+          continue;
+        }
+
+        const cleanedChannel: Record<string, any> = {};
+
+        // 移除 null 值的字段
+        for (const [k, v] of Object.entries(channel as Record<string, any>)) {
+          if (v !== null && v !== undefined) {
+            cleanedChannel[k] = v;
+          }
+        }
 
         // 将 allowFrom 字符串转换为列表
         if (cleanedChannel.allowFrom !== undefined) {
@@ -509,22 +539,44 @@ export default function ConfigEditor() {
       }
     }
 
-    // 清理 tools.mcpServers - 只保存启用的服务器（使用 mcpServersConfig 判断）
-    const enabledServers: Record<string, McpServer> = {};
+    // 清理 tools.mcpServers - 只保存启用的服务器
+    const enabledServers: Record<string, any> = {};
     for (const [serverId, server] of Object.entries(mcpServersConfig)) {
       // 只保存启用的服务器（disabled 不为 true）
       if (!server.disabled) {
-        // 移除 disabled 字段后保存
-        const { disabled, ...serverWithoutDisabled } = server;
-        enabledServers[serverId] = serverWithoutDisabled;
+        // 移除 disabled 和 type 字段后保存（type 字段不是官方配置）
+        const { disabled, type, ...serverWithoutUiFields } = server as any;
+
+        // 移除 null 值的字段
+        const cleanServer: Record<string, any> = {};
+        for (const [k, v] of Object.entries(serverWithoutUiFields)) {
+          if (v !== null && v !== undefined) {
+            cleanServer[k] = v;
+          }
+        }
+
+        if (Object.keys(cleanServer).length > 0) {
+          enabledServers[serverId] = cleanServer;
+        }
       }
     }
 
-    // 始终设置 tools.mcpServers（即使为空对象）
+    // 设置 tools 配置
     cleaned.tools = {
       ...config.tools,
       mcpServers: enabledServers,
     };
+
+    // 清理 tools 中的 null 值
+    if (cleaned.tools) {
+      const cleanTools: Record<string, any> = {};
+      for (const [k, v] of Object.entries(cleaned.tools)) {
+        if (v !== null && v !== undefined) {
+          cleanTools[k] = v;
+        }
+      }
+      cleaned.tools = cleanTools;
+    }
 
     return cleaned;
   }
@@ -1784,7 +1836,6 @@ export default function ConfigEditor() {
             [pid]: hasToken ? (isExpired ? "expired" : true) : false,
           }));
         }}
-        onAutoConfig={(providerId) => applyProviderAgentConfig(providerId, true)}
       />
 
       {/* 渠道编辑模态框 */}
