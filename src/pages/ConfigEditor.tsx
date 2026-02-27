@@ -28,6 +28,8 @@ import {
   Globe,
   FileText,
   Wrench,
+  Sparkles,
+  Radio,
 } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -55,7 +57,6 @@ import HistoryPanel from "@/components/config/HistoryPanel";
 import CodeEditorView from "@/components/config/CodeEditorView";
 
 const TEMPLATES_STORAGE_KEY = "nanobot_config_templates";
-const PROVIDER_AGENT_CONFIGS_KEY = "nanoboard_provider_agent_configs";
 const MCP_SERVERS_STORAGE_KEY = "nanoboard_mcp_servers";
 
 // MCP Server 配置（包含 disabled 字段用于 UI 状态管理）
@@ -106,7 +107,6 @@ export default function ConfigEditor() {
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(() => {
     return localStorage.getItem("selectedProviderId");
   });
-  const [providerAgentConfigs, setProviderAgentConfigs] = useState<Record<string, ProviderAgentConfig>>({});
   const [mcpServersConfig, setMcpServersConfig] = useState<Record<string, McpServerWithState>>({});
   // OAuth provider token 状态：true=已登录, false=未登录, "expired"=已过期
   const [oauthTokenStatuses, setOauthTokenStatuses] = useState<Record<string, boolean | "expired">>({});
@@ -152,7 +152,6 @@ export default function ConfigEditor() {
 
   useEffect(() => {
     loadConfig();
-    loadProviderAgentConfigs();
     checkAllOAuthStatuses();
   }, []);
 
@@ -235,26 +234,6 @@ export default function ConfigEditor() {
     }
   }
 
-  function loadProviderAgentConfigs() {
-    try {
-      const stored = localStorage.getItem(PROVIDER_AGENT_CONFIGS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setProviderAgentConfigs(parsed);
-      }
-    } catch (error) {
-      console.error(t("config.loadProviderAgentConfigFailed"), error);
-    }
-  }
-
-  function saveProviderAgentConfigs(data?: Record<string, ProviderAgentConfig>) {
-    try {
-      localStorage.setItem(PROVIDER_AGENT_CONFIGS_KEY, JSON.stringify(data ?? providerAgentConfigs));
-    } catch (error) {
-      console.error(t("config.saveProviderAgentConfigFailed"), error);
-    }
-  }
-
   // 加载 MCP 服务器配置（从 localStorage）
   function loadMcpServersConfig() {
     try {
@@ -294,6 +273,38 @@ export default function ConfigEditor() {
       await configApi.save(parsed);
       setOriginalConfig(parsed);
       setConfig(parsed as Config);
+
+      // 同步更新 MCP 服务器配置状态
+      const configMcpServers = (parsed as Config).tools?.mcpServers || {};
+      const updatedMcpConfig: Record<string, McpServerWithState> = {};
+
+      // 保留现有服务器的禁用状态
+      for (const [serverId, server] of Object.entries(mcpServersConfig)) {
+        if (configMcpServers[serverId]) {
+          // 服务器仍在配置中，保留禁用状态但更新其他配置
+          updatedMcpConfig[serverId] = {
+            ...configMcpServers[serverId],
+            disabled: server.disabled
+          };
+        }
+        // 如果服务器不在新配置中，则不添加（已被删除）
+      }
+
+      // 添加新服务器（默认启用）
+      for (const [serverId, server] of Object.entries(configMcpServers)) {
+        if (!updatedMcpConfig[serverId]) {
+          updatedMcpConfig[serverId] = { ...server, disabled: false };
+        }
+      }
+
+      setMcpServersConfig(updatedMcpConfig);
+
+      // 更新选中的 provider（如果配置中指定了）
+      const agentDefaults = (parsed as Config).agents?.defaults;
+      if (agentDefaults?.provider && agentDefaults.provider !== "auto") {
+        setSelectedProviderId(agentDefaults.provider);
+      }
+
       // 更新代码状态为保存后的内容
       setCode(JSON.stringify(parsed, null, 2));
       toast.showSuccess(t("config.saveSuccess"));
@@ -339,118 +350,99 @@ export default function ConfigEditor() {
     }
   }
 
-  function getProviderAgentConfig(providerId: string): ProviderAgentConfig {
-    return providerAgentConfigs[providerId] || {};
+  // 从 config.agents.defaults 获取 Agent 配置，转换为 snake_case 格式用于 UI
+  function getProviderAgentConfig(_providerId: string): ProviderAgentConfig {
+    const defaults = config.agents?.defaults;
+    if (!defaults) return {};
+
+    // 将 camelCase 转换为 snake_case
+    const snakeCaseConfig: ProviderAgentConfig = {};
+    if (defaults.model !== undefined) snakeCaseConfig.model = defaults.model;
+    if (defaults.maxTokens !== undefined) snakeCaseConfig.max_tokens = defaults.maxTokens;
+    if (defaults.maxToolIterations !== undefined) snakeCaseConfig.max_tool_iterations = defaults.maxToolIterations;
+    if (defaults.memoryWindow !== undefined) snakeCaseConfig.memory_window = defaults.memoryWindow;
+    if (defaults.temperature !== undefined) snakeCaseConfig.temperature = defaults.temperature;
+    if (defaults.workspace !== undefined) snakeCaseConfig.workspace = defaults.workspace;
+
+    return snakeCaseConfig;
   }
 
-  function updateProviderAgentConfig(providerId: string, field: keyof ProviderAgentConfig, value: any) {
-    const currentConfig = getProviderAgentConfig(providerId);
-    const updatedConfig = {
-      ...providerAgentConfigs,
-      [providerId]: {
-        ...currentConfig,
-        [field]: value,
-      },
-    };
-    setProviderAgentConfigs(updatedConfig);
-    saveProviderAgentConfigs(updatedConfig);
-  }
+  // 更新 Agent 配置，直接更新 config.agents.defaults
+  async function updateProviderAgentConfig(providerId: string, field: keyof ProviderAgentConfig, value: any) {
+    // 将 snake_case 字段名转换为 camelCase
+    const camelCaseField = field.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 
-  async function applyProviderAgentConfig(providerId: string, updateDefaultProvider: boolean = false) {
-    const agentConfig = getProviderAgentConfig(providerId);
-    const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === providerId);
-
-    // 推荐的配置值
-    const recommendedConfig: ProviderAgentConfig = {
-      model: providerInfo?.defaultModel || "",
-      max_tokens: 8192,
-      max_tool_iterations: 20,
-      memory_window: 50,
-      temperature: 0.7,
-      workspace: "~/.nanobot/workspace",
-    };
-
-    // 如果是自动配置（点击了自动配置按钮），使用推荐值覆盖
-    // 否则保留现有配置，只填充未设置的值
-    let configToApply: ProviderAgentConfig;
-    if (updateDefaultProvider) {
-      // 自动配置：使用推荐值，但保留用户已手动修改的值
-      configToApply = {
-        ...recommendedConfig,
-        ...agentConfig,  // 保留用户已设置的值
-      };
-      // 如果用户没有设置 model，使用推荐的 model
-      if (!agentConfig.model) {
-        configToApply.model = recommendedConfig.model;
-      }
-    } else {
-      // 普通应用：合并配置
-      if (Object.keys(agentConfig).length === 0) {
-        configToApply = recommendedConfig;
-      } else {
-        configToApply = {
-          ...recommendedConfig,
-          ...agentConfig,
-        };
-      }
-    }
-
-    // 总是更新 providerAgentConfigs 状态和 localStorage
-    const updatedConfigs = {
-      ...providerAgentConfigs,
-      [providerId]: configToApply,
-    };
-    setProviderAgentConfigs(updatedConfigs);
-    saveProviderAgentConfigs(updatedConfigs);
-
-    // 将 snake_case (localStorage) 转换为 camelCase (config.json)
-    const camelCaseConfig: Record<string, any> = {};
-    if (configToApply.model !== undefined) camelCaseConfig.model = configToApply.model;
-    if (configToApply.max_tokens !== undefined) camelCaseConfig.maxTokens = configToApply.max_tokens;
-    if (configToApply.max_tool_iterations !== undefined) camelCaseConfig.maxToolIterations = configToApply.max_tool_iterations;
-    if (configToApply.memory_window !== undefined) camelCaseConfig.memoryWindow = configToApply.memory_window;
-    if (configToApply.temperature !== undefined) camelCaseConfig.temperature = configToApply.temperature;
-    if (configToApply.workspace !== undefined) camelCaseConfig.workspace = configToApply.workspace;
-
-    // 如果需要更新默认 provider，也添加 provider 字段
-    if (updateDefaultProvider) {
-      camelCaseConfig.provider = providerId;
-    }
-
-    // 调试日志
-    console.log("[applyProviderAgentConfig] providerId:", providerId);
-    console.log("[applyProviderAgentConfig] updateDefaultProvider:", updateDefaultProvider);
-    console.log("[applyProviderAgentConfig] camelCaseConfig:", camelCaseConfig);
-
-    // 更新 config.agents.defaults
     const updatedConfig = {
       ...config,
       agents: {
         ...config.agents,
         defaults: {
           ...config.agents?.defaults,
-          ...camelCaseConfig,
+          provider: providerId,
+          [camelCaseField]: value,
         },
       },
     };
 
-    console.log("[applyProviderAgentConfig] updatedConfig.agents.defaults:", updatedConfig.agents?.defaults);
+    setConfig(updatedConfig);
+    setSelectedProviderId(providerId);
+
+    // 自动保存
+    try {
+      const configToSave = cleanConfigForSave(updatedConfig);
+      await configApi.save(configToSave);
+      setOriginalConfig(updatedConfig);
+      setCode(JSON.stringify(updatedConfig, null, 2));
+    } catch (error) {
+      toast.showError(t("config.autoSaveFailed"));
+    }
+  }
+
+  // 应用 Provider 的 Agent 配置到 config.agents.defaults
+  async function applyProviderAgentConfig(providerId: string, _updateDefaultProvider: boolean = false) {
+    const providerInfo = AVAILABLE_PROVIDERS.find(p => p.id === providerId);
+    const currentDefaults = config.agents?.defaults || {};
+
+    // 推荐的配置值
+    const recommendedConfig = {
+      model: providerInfo?.defaultModel || "",
+      maxTokens: 8192,
+      maxToolIterations: 20,
+      memoryWindow: 50,
+      temperature: 0.7,
+      workspace: "~/.nanobot/workspace",
+    };
+
+    // 合并配置：推荐值 + 用户已设置的值
+    const mergedConfig = {
+      ...recommendedConfig,
+      ...currentDefaults,
+      provider: providerId,  // 总是更新 provider
+      // 如果用户没有设置 model，使用推荐的 model
+      model: currentDefaults.model || recommendedConfig.model,
+    };
+
+    const updatedConfig = {
+      ...config,
+      agents: {
+        ...config.agents,
+        defaults: mergedConfig,
+      },
+    };
 
     setConfig(updatedConfig);
-    setSelectedProviderId(providerId); // 标记为已选择
+    setSelectedProviderId(providerId);
+
     const providerName = providerInfo?.id || providerId;
     toast.showSuccess(t("config.applyProviderConfig", { name: providerName }));
 
     // 自动保存
     try {
       const configToSave = cleanConfigForSave(updatedConfig);
-      console.log("[applyProviderAgentConfig] configToSave.agents.defaults:", configToSave.agents?.defaults);
       await configApi.save(configToSave);
-      // 同步更新代码编辑器状态
       setOriginalConfig(updatedConfig);
       setCode(JSON.stringify(updatedConfig, null, 2));
     } catch (error) {
-      console.error("[applyProviderAgentConfig] Save error:", error);
       toast.showError(t("config.autoSaveFailed"));
     }
   }
@@ -460,6 +452,9 @@ export default function ConfigEditor() {
     'telegram', 'discord', 'whatsapp', 'mochat', 'feishu',
     'dingtalk', 'slack', 'qq', 'matrix', 'email'
   ];
+
+  // channels 顶层配置字段（不在具体 channel 内部）
+  const CHANNEL_TOP_LEVEL_KEYS = ['sendProgress', 'sendToolHints'];
 
   // 清理配置，移除仅用于 UI 的辅助字段，确保符合 nanobot 官方格式
   function cleanConfigForSave(config: Config): any {
@@ -490,18 +485,32 @@ export default function ConfigEditor() {
           cleanProvider.apiBase = defaultApiBase;
         }
 
-        // 只保存有实际配置的 provider（至少有 apiKey 或 token）
-        if (cleanProvider.apiKey || cleanProvider.token || Object.keys(cleanProvider).length > 0) {
+        // 只保存有实际配置的 provider（至少有 apiKey）
+        if (cleanProvider.apiKey) {
           cleaned.providers[key] = cleanProvider;
         }
       }
     }
 
-    // 清理 channels - 确保只有有效的 channel 配置
+    // 清理 channels - 确保 sendProgress/sendToolHints 在顶层
     if (config.channels) {
       cleaned.channels = {};
+
+      // 处理顶层配置字段
+      for (const topLevelKey of CHANNEL_TOP_LEVEL_KEYS) {
+        if (config.channels[topLevelKey] !== undefined) {
+          cleaned.channels[topLevelKey] = config.channels[topLevelKey];
+        }
+      }
+
+      // 处理各个 channel 配置
       for (const [key, channel] of Object.entries(config.channels)) {
-        // 跳过非 channel 的键（如错误放置的 sendProgress, sendToolHints 等）
+        // 跳过顶层配置字段
+        if (CHANNEL_TOP_LEVEL_KEYS.includes(key)) {
+          continue;
+        }
+
+        // 跳过非 channel 的键
         if (!VALID_CHANNELS.includes(key)) {
           console.warn(`[cleanConfigForSave] Skipping invalid channel key: ${key}`);
           continue;
@@ -544,7 +553,9 @@ export default function ConfigEditor() {
     for (const [serverId, server] of Object.entries(mcpServersConfig)) {
       // 只保存启用的服务器（disabled 不为 true）
       if (!server.disabled) {
-        // 移除 disabled 和 type 字段后保存（type 字段不是官方配置）
+        // 移除 UI 辅助字段后保存（这些字段不是官方配置）
+        // - disabled: UI 状态，用于启用/禁用服务器
+        // - type: 非官方字段，nanobot 通过 url 是否存在自动判断传输模式
         const { disabled, type, ...serverWithoutUiFields } = server as any;
 
         // 移除 null 值的字段
@@ -679,6 +690,28 @@ export default function ConfigEditor() {
       const configToSave = cleanConfigForSave(updatedConfig);
       await configApi.save(configToSave);
       // 同步更新代码编辑器状态
+      setOriginalConfig(updatedConfig);
+      setCode(JSON.stringify(updatedConfig, null, 2));
+    } catch (error) {
+      toast.showError(t("config.autoSaveFailed"));
+    }
+  }
+
+  // 更新 channels 顶层配置（如 sendProgress, sendToolHints）
+  async function updateChannelsTopLevel(field: string, value: any) {
+    const updatedConfig = {
+      ...config,
+      channels: {
+        ...config.channels,
+        [field]: value,
+      },
+    };
+    setConfig(updatedConfig);
+
+    // 自动保存
+    try {
+      const configToSave = cleanConfigForSave(updatedConfig);
+      await configApi.save(configToSave);
       setOriginalConfig(updatedConfig);
       setCode(JSON.stringify(updatedConfig, null, 2));
     } catch (error) {
@@ -1333,6 +1366,94 @@ export default function ConfigEditor() {
 
           {expandedSections.has("channels") && (
             <div className="p-5 pt-0 space-y-4">
+              {/* 全局设置 - sendProgress 和 sendToolHints */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-blue-100 dark:bg-blue-800/50 rounded-lg">
+                    <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    {t("config.channelsGlobalSettings")}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* sendProgress */}
+                  <div className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                    config.channels?.sendProgress
+                      ? "bg-green-100/80 dark:bg-green-900/30 border border-green-200 dark:border-green-700/50"
+                      : "bg-white/60 dark:bg-dark-bg-card/60 border border-transparent"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg transition-colors ${
+                        config.channels?.sendProgress
+                          ? "bg-green-500 text-white"
+                          : "bg-gray-200 dark:bg-dark-bg-hover text-gray-500 dark:text-dark-text-muted"
+                      }`}>
+                        <Radio className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
+                          {t("config.sendProgress")}
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">
+                          {t("config.sendProgressDesc")}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => updateChannelsTopLevel("sendProgress", !config.channels?.sendProgress)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        config.channels?.sendProgress ? "bg-green-500" : "bg-gray-300 dark:bg-dark-border-default"
+                      }`}
+                      title={config.channels?.sendProgress ? t("config.clickToDisable") : t("config.clickToEnable")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-dark-text-primary transition-transform shadow ${
+                          config.channels?.sendProgress ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {/* sendToolHints */}
+                  <div className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                    config.channels?.sendToolHints
+                      ? "bg-amber-100/80 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50"
+                      : "bg-white/60 dark:bg-dark-bg-card/60 border border-transparent"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg transition-colors ${
+                        config.channels?.sendToolHints
+                          ? "bg-amber-500 text-white"
+                          : "bg-gray-200 dark:bg-dark-bg-hover text-gray-500 dark:text-dark-text-muted"
+                      }`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
+                          {t("config.sendToolHints")}
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">
+                          {t("config.sendToolHintsDesc")}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => updateChannelsTopLevel("sendToolHints", !config.channels?.sendToolHints)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        config.channels?.sendToolHints ? "bg-amber-500" : "bg-gray-300 dark:bg-dark-border-default"
+                      }`}
+                      title={config.channels?.sendToolHints ? t("config.clickToDisable") : t("config.clickToEnable")}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-dark-text-primary transition-transform shadow ${
+                          config.channels?.sendToolHints ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* 可用的渠道列表 */}
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 dark:text-dark-text-secondary mb-3">{t("config.selectChannel")}</p>
