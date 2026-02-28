@@ -100,10 +100,9 @@ export default function SkillCard({
               </button>
               <button
                 onClick={() => onViewDetails(skill)}
-                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                title={t("skills.viewDetails")}
+                className="px-3 py-2 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors font-medium"
               >
-                <ExternalLink className="w-4 h-4" />
+                {t("skills.viewDetails")}
               </button>
             </>
           ) : (
@@ -117,10 +116,9 @@ export default function SkillCard({
               </button>
               <button
                 onClick={() => onViewDetails(skill)}
-                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                title={t("skills.viewDetails")}
+                className="px-3 py-2 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors font-medium"
               >
-                <ExternalLink className="w-4 h-4" />
+                {t("skills.viewDetails")}
               </button>
             </>
           )}

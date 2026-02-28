@@ -662,6 +662,9 @@
     "warning": "警告",
     "info": "信息"
   },
+  "common": {
+    "close": "关闭"
+  },
   "language": {
     "title": "语言",
     "switch": "切换语言",
@@ -1121,6 +1124,10 @@
     "changelog": "更新日志",
     "skillFile": "技能文件",
     "viewSkillMd": "查看 SKILL.md",
-    "loadingFile": "加载中..."
+    "loadingFile": "加载中...",
+    "installTip": "请手动执行以下命令安装此技能",
+    "uninstallTip": "请手动执行以下命令卸载此技能",
+    "copyFailed": "复制失败",
+    "loadingDetail": "加载技能详情中..."
   }
 }

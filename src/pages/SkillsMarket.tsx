@@ -109,6 +109,31 @@ export default function SkillsMarket() {
     toast.showSuccess(t("skills.commandCopied"));
   }, [getInstallCommand, t, toast]);
 
+  const handleInstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
+    const slug = (skill as any).slug;
+    const command = getInstallCommand(slug);
+    try {
+      await navigator.clipboard.writeText(command);
+      toast.showSuccess(t("skills.commandCopied"));
+      // 提示用户手动执行命令
+      toast.showInfo(`${t("skills.installTip")}:\n${command}`);
+    } catch {
+      toast.showError(t("skills.copyFailed"));
+    }
+  }, [getInstallCommand, t, toast]);
+
+  const handleUninstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
+    const slug = (skill as any).slug;
+    const command = `npx clawhub@latest uninstall ${slug}`;
+    try {
+      await navigator.clipboard.writeText(command);
+      toast.showSuccess(t("skills.commandCopied"));
+      toast.showInfo(`${t("skills.uninstallTip")}:\n${command}`);
+    } catch {
+      toast.showError(t("skills.copyFailed"));
+    }
+  }, [t, toast]);
+
   // 使用 useMemo 缓存分类列表
   const categories = useMemo(() => 
     Array.from(new Set(skills.map((s: any) => (s as any).category).filter(Boolean))) as string[],
@@ -186,8 +211,8 @@ export default function SkillsMarket() {
             searchResults.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchResults.map((skill) => (
-                  <SkillCard key={skill.slug} skill={skill} isInstalled={false} onInstall={() => {}}
-                    onUninstall={() => {}} onViewDetails={() => viewSkillDetail(skill.slug)} />
+                  <SkillCard key={skill.slug} skill={skill} isInstalled={false} onInstall={handleInstall}
+                    onUninstall={handleUninstall} onViewDetails={viewSkillDetail} />
                 ))}
               </div>
             ) : (
@@ -196,8 +221,8 @@ export default function SkillsMarket() {
           ) : skills.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {skills.map((skill) => (
-                <SkillCard key={skill.slug} skill={skill} isInstalled={false} onInstall={() => {}}
-                  onUninstall={() => {}} onViewDetails={() => viewSkillDetail(skill.slug)} />
+                <SkillCard key={skill.slug} skill={skill} isInstalled={false} onInstall={handleInstall}
+                  onUninstall={handleUninstall} onViewDetails={viewSkillDetail} />
               ))}
             </div>
           ) : (
@@ -211,24 +236,27 @@ export default function SkillsMarket() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-dark-bg-card rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-dark-border-subtle flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={closeDetail} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-bg-hover rounded-lg">
-                  <ExternalLink className="w-5 h-5 rotate-180 text-gray-500" />
-                </button>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">{selectedSkill.skill.displayName}</h2>
-                  <p className="text-sm text-gray-500 dark:text-dark-text-secondary">{selectedSkill.skill.slug}</p>
-                </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary truncate">{selectedSkill.skill.displayName}</h2>
+                <p className="text-sm text-gray-500 dark:text-dark-text-secondary truncate">{selectedSkill.skill.slug}</p>
               </div>
-              <button onClick={() => copyInstallCommand(selectedSkill.skill.slug)}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
-                {t("skills.copyInstallCommand")}
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => copyInstallCommand(selectedSkill.skill.slug)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+                  {t("skills.copyInstallCommand")}
+                </button>
+                <button onClick={closeDetail} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-bg-hover rounded-lg transition-colors" title={t("common.close")}>
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-auto p-4">
               {loadingDetail ? (
-                <div className="flex items-center justify-center h-32"><RefreshCw className="w-6 h-6 animate-spin text-gray-400" /></div>
+                <div className="flex flex-col items-center justify-center h-32 text-gray-500 dark:text-dark-text-secondary">
+                  <RefreshCw className="w-6 h-6 animate-spin mb-2" />
+                  <p className="text-sm">{t("skills.loadingDetail")}</p>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

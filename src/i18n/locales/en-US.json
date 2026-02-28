@@ -653,6 +653,9 @@
     "warning": "Warning",
     "info": "Info"
   },
+  "common": {
+    "close": "Close"
+  },
   "language": {
     "title": "Language",
     "switch": "Switch Language",
@@ -1122,6 +1125,10 @@
     "changelog": "Changelog",
     "skillFile": "Skill File",
     "viewSkillMd": "View SKILL.md",
-    "loadingFile": "Loading..."
+    "loadingFile": "Loading...",
+    "installTip": "Please manually execute the following command to install this skill",
+    "uninstallTip": "Please manually execute the following command to uninstall this skill",
+    "copyFailed": "Copy failed",
+    "loadingDetail": "Loading skill details..."
   }
 }
