@@ -43,6 +43,8 @@ export default function SkillsMarket() {
   const [loadingFile, setLoadingFile] = useState(false);
   const [showInstalled, setShowInstalled] = useState(false);
   const [category, setCategory] = useState("");
+  const [installingSlug, setInstallingSlug] = useState<string | null>(null);
+  const [loadingSkillSlug, setLoadingSkillSlug] = useState<string | null>(null);
 
   const loadSkills = useCallback(async () => {
     setLoading(true);
@@ -77,6 +79,7 @@ export default function SkillsMarket() {
 
   const viewSkillDetail = async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
+    setLoadingSkillSlug(slug);
     setLoadingDetail(true);
     try {
       const detail = await clawhubApi.getSkillDetail(slug);
@@ -84,6 +87,7 @@ export default function SkillsMarket() {
     } catch (error) {
       console.error("Failed to load skill detail:", error);
       toast.showError(t("skills.loadDetailFailed"));
+      setLoadingSkillSlug(null);
     } finally {
       setLoadingDetail(false);
     }
@@ -102,7 +106,7 @@ export default function SkillsMarket() {
     }
   };
 
-  const closeDetail = () => { setSelectedSkill(null); setSkillFileContent(null); };
+  const closeDetail = () => { setSelectedSkill(null); setSkillFileContent(null); setLoadingSkillSlug(null); };
 
   const getInstallCommand = useCallback((slug: string) => `npx clawhub@latest install ${slug}`, []);
 
@@ -113,26 +117,35 @@ export default function SkillsMarket() {
 
   const handleInstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
-    const command = getInstallCommand(slug);
+    setInstallingSlug(slug);
     try {
-      await navigator.clipboard.writeText(command);
-      toast.showSuccess(t("skills.commandCopied"));
-      // 提示用户手动执行命令
-      toast.showInfo(`${t("skills.installTip")}:\n${command}`);
-    } catch {
-      toast.showError(t("skills.copyFailed"));
+      const result = await clawhubApi.installSkill(slug);
+      if (result.success) {
+        toast.showSuccess(result.message);
+      } else {
+        toast.showError(result.message);
+      }
+    } catch (error) {
+      toast.showError(`${t("skills.installFailed")}: ${error}`);
+    } finally {
+      setInstallingSlug(null);
     }
-  }, [getInstallCommand, t, toast]);
+  }, [t, toast]);
 
   const handleUninstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
-    const command = `npx clawhub@latest uninstall ${slug}`;
+    setInstallingSlug(slug);
     try {
-      await navigator.clipboard.writeText(command);
-      toast.showSuccess(t("skills.commandCopied"));
-      toast.showInfo(`${t("skills.uninstallTip")}:\n${command}`);
-    } catch {
-      toast.showError(t("skills.copyFailed"));
+      const result = await clawhubApi.uninstallSkill(slug);
+      if (result.success) {
+        toast.showSuccess(result.message);
+      } else {
+        toast.showError(result.message);
+      }
+    } catch (error) {
+      toast.showError(`${t("skills.uninstallFailed")}: ${error}`);
+    } finally {
+      setInstallingSlug(null);
     }
   }, [t, toast]);
 
@@ -147,7 +160,10 @@ export default function SkillsMarket() {
       <div className="bg-white dark:bg-dark-bg-card border-b border-gray-200 dark:border-dark-border-subtle p-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">{t("skills.title")}</h1>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">{t("skills.title")}</h1>
+              <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-1">{t("skills.nodeRequired")}</p>
+            </div>
             <a href="https://clawhub.ai" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
               {t("skills.visitClawHub")}<ExternalLink className="w-4 h-4" />
@@ -213,7 +229,7 @@ export default function SkillsMarket() {
             searchResults.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchResults.map((skill) => (
-                  <SkillCard key={skill.slug} skill={skill} isInstalled={false} onInstall={handleInstall}
+                  <SkillCard key={skill.slug} skill={skill} isInstalled={false} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
                     onUninstall={handleUninstall} onViewDetails={(s) => viewSkillDetail(s)} />
                 ))}
               </div>
@@ -223,7 +239,7 @@ export default function SkillsMarket() {
           ) : skills.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {skills.map((skill) => (
-                <SkillCard key={skill.slug} skill={skill} isInstalled={false} onInstall={handleInstall}
+                <SkillCard key={skill.slug} skill={skill} isInstalled={false} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
                   onUninstall={handleUninstall} onViewDetails={(s) => viewSkillDetail(s)} />
               ))}
             </div>
@@ -234,91 +250,94 @@ export default function SkillsMarket() {
       </div>
 
       {/* 技能详情侧边栏 */}
-      {selectedSkill && (
+      {(loadingSkillSlug || selectedSkill) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-dark-bg-card rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-gray-200 dark:border-dark-border-subtle flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary truncate">{selectedSkill.skill.displayName}</h2>
-                <p className="text-sm text-gray-500 dark:text-dark-text-secondary truncate">{selectedSkill.skill.slug}</p>
+            {loadingDetail && !selectedSkill ? (
+              <div className="p-4 flex flex-col items-center justify-center h-48 text-gray-500 dark:text-dark-text-secondary">
+                <RefreshCw className="w-8 h-8 animate-spin mb-3" />
+                <p className="text-sm">{t("skills.loadingDetail")}</p>
+                <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">{loadingSkillSlug}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => copyInstallCommand(selectedSkill.skill.slug)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
-                  {t("skills.copyInstallCommand")}
-                </button>
-                <button onClick={closeDetail} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-bg-hover rounded-lg transition-colors" title={t("common.close")}>
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-auto p-4">
-              {loadingDetail ? (
-                <div className="flex flex-col items-center justify-center h-32 text-gray-500 dark:text-dark-text-secondary">
-                  <RefreshCw className="w-6 h-6 animate-spin mb-2" />
-                  <p className="text-sm">{t("skills.loadingDetail")}</p>
+            ) : (
+              <>
+                <div className="p-4 border-b border-gray-200 dark:border-dark-border-subtle flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary truncate">{selectedSkill?.skill.displayName}</h2>
+                    <p className="text-sm text-gray-500 dark:text-dark-text-secondary truncate">{selectedSkill?.skill.slug}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => selectedSkill && copyInstallCommand(selectedSkill.skill.slug)}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+                      {t("skills.copyInstallCommand")}
+                    </button>
+                    <button onClick={closeDetail} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-bg-hover rounded-lg transition-colors" title={t("common.close")}>
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
-                      <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.owner")}</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{selectedSkill.owner.handle}</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
-                      <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.version")}</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{selectedSkill.latestVersion.version}</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
-                      <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.downloads")}</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{formatNumber(selectedSkill.skill.stats?.installsCurrent || 0)}</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
-                      <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.stars")}</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{formatNumber(selectedSkill.skill.stats?.stars || 0)}</p>
-                    </div>
-                  </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.description")}</h3>
-                    <p className="text-sm text-gray-600 dark:text-dark-text-primary bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
-                      {selectedSkill.skill.summary || t("skills.noDescription")}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.installCommand")}</h3>
-                    <div className="bg-gray-900 dark:bg-dark-bg-sidebar rounded-lg p-3 font-mono text-sm text-green-400">
-                      {getInstallCommand(selectedSkill.skill.slug)}
+                <div className="flex-1 overflow-auto p-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.owner")}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{selectedSkill?.owner.handle}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.version")}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{selectedSkill?.latestVersion.version}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.downloads")}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{formatNumber(selectedSkill?.skill.stats?.installsCurrent || 0)}</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{t("skills.stars")}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{formatNumber(selectedSkill?.skill.stats?.stars || 0)}</p>
+                      </div>
                     </div>
-                  </div>
 
-                  {selectedSkill.latestVersion.changelog && (
                     <div>
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.changelog")}</h3>
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.description")}</h3>
                       <p className="text-sm text-gray-600 dark:text-dark-text-primary bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
-                        {selectedSkill.latestVersion.changelog}
+                        {selectedSkill?.skill.summary || t("skills.noDescription")}
                       </p>
                     </div>
-                  )}
 
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.skillFile")}</h3>
-                    <button onClick={() => loadSkillFile("SKILL.md")} disabled={loadingFile}
-                      className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:underline">
-                      <ExternalLink className="w-4 h-4" />
-                      {loadingFile ? t("skills.loadingFile") : t("skills.viewSkillMd")}
-                    </button>
-                    {skillFileContent && (
-                      <pre className="mt-3 bg-gray-900 dark:bg-dark-bg-sidebar rounded-lg p-4 text-sm text-gray-300 overflow-auto max-h-64">
-                        {skillFileContent}
-                      </pre>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.installCommand")}</h3>
+                      <div className="bg-gray-900 dark:bg-dark-bg-sidebar rounded-lg p-3 font-mono text-sm text-green-400">
+                        {selectedSkill && getInstallCommand(selectedSkill.skill.slug)}
+                      </div>
+                    </div>
+
+                    {selectedSkill?.latestVersion.changelog && (
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.changelog")}</h3>
+                        <p className="text-sm text-gray-600 dark:text-dark-text-primary bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg p-3">
+                          {selectedSkill.latestVersion.changelog}
+                        </p>
+                      </div>
                     )}
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-2">{t("skills.skillFile")}</h3>
+                      <button onClick={() => selectedSkill && loadSkillFile("SKILL.md")} disabled={loadingFile}
+                        className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:underline">
+                        <ExternalLink className="w-4 h-4" />
+                        {loadingFile ? t("skills.loadingFile") : t("skills.viewSkillMd")}
+                      </button>
+                      {skillFileContent && (
+                        <pre className="mt-3 bg-gray-900 dark:bg-dark-bg-sidebar rounded-lg p-4 text-sm text-gray-300 overflow-auto max-h-64">
+                          {skillFileContent}
+                        </pre>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}

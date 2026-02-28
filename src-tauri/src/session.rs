@@ -309,8 +309,48 @@ fn get_skills_path() -> Result<PathBuf> {
     let skills_path = workspace_path.join("skills");
     Ok(skills_path)
 }
+/// 解析 Markdown 文件的 frontmatter
+fn parse_frontmatter(content: &str) -> Option<serde_json::Value> {
+    // 检查是否有 frontmatter (以 --- 开头)
+    if !content.starts_with("---") {
+        return None;
+    }
 
-/// 列出所有Skill（包括目录型技能和文件型技能）
+    // 查找 frontmatter 的结束位置
+    let end_marker = content[3..].find("\n---")?;
+    let frontmatter_content = &content[3..end_marker + 3];
+
+    let mut data = serde_json::Map::new();
+
+    // 解析每一行 key: value
+    for line in frontmatter_content.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+
+        if let Some(colon_pos) = line.find(':') {
+            let key = line[..colon_pos].trim();
+            let value = line[colon_pos + 1..].trim();
+
+            // 移除引号（如果有的话）
+            let value = value.trim_start_matches('"').trim_end_matches('"');
+            let value = value.trim_start_matches('\'').trim_end_matches('\'');
+
+            data.insert(key.to_string(), serde_json::Value::String(value.to_string()));
+        }
+    }
+
+    if data.is_empty() {
+        None
+    } else {
+        Some(serde_json::Value::Object(data))
+    }
+}
+
+
+
+/// 列出所有 Skill（包括目录型技能和文件型技能）
 #[tauri::command]
 pub async fn list_skills() -> Result<serde_json::Value, String> {
     let skills_path = get_skills_path().map_err(|e| e.to_string())?;
@@ -318,18 +358,18 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
     if !skills_path.exists() {
         return Ok(json!({
             "skills": [],
-            "message": "skills目录不存在"
+            "message": "skills 目录不存在"
         }));
     }
 
     let mut skills = Vec::new();
 
-    // 读取skills目录中的所有条目
+    // 读取 skills 目录中的所有条目
     if let Ok(entries) = fs::read_dir(&skills_path) {
         for entry in entries.flatten() {
             let path = entry.path();
 
-            // 情况1: 目录型技能（包含 SKILL.md 文件）
+            // 情况 1: 目录型技能（包含 SKILL.md 文件）
             if path.is_dir() {
                 if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
                     // 跳过隐藏目录
@@ -353,23 +393,38 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
                     // 读取文件元数据
                     if let Ok(metadata) = fs::metadata(&skill_file) {
                         if let Ok(modified) = metadata.modified() {
-                            // 读取文件内容的第一行作为标题
-                            let title = if let Ok(content) = fs::read_to_string(&skill_file) {
-                                content
+                            // 读取文件内容并解析 frontmatter
+                            let (name, description, title) = if let Ok(file_content) = fs::read_to_string(&skill_file) {
+                                let frontmatter = parse_frontmatter(&file_content);
+                                let name = frontmatter
+                                    .as_ref()
+                                    .and_then(|fm| fm.get("name"))
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or(dir_name)
+                                    .to_string();
+                                let description = frontmatter
+                                    .as_ref()
+                                    .and_then(|fm| fm.get("description"))
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string();
+                                let title = file_content
                                     .lines()
                                     .find(|line| !line.is_empty() && line.starts_with("#"))
                                     .unwrap_or("")
                                     .trim_start_matches("#")
                                     .trim()
-                                    .to_string()
+                                    .to_string();
+                                (name, description, title)
                             } else {
-                                dir_name.to_string()
+                                (dir_name.to_string(), String::new(), String::new())
                             };
 
                             skills.push(json!({
                                 "id": format!("{}/{}", dir_name, skill_filename),
-                                "name": dir_name,
+                                "name": name,
                                 "title": title,
+                                "description": description,
                                 "enabled": enabled,
                                 "type": "directory",
                                 "path": skill_file.to_string_lossy(),
@@ -381,7 +436,7 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
                     }
                 }
             }
-            // 情况2: 文件型技能（顶级 .md 文件）
+            // 情况 2: 文件型技能（顶级 .md 文件）
             else if path.is_file() {
                 if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
                     // 判断是否为 Skill 文件（启用或禁用状态）
@@ -396,23 +451,38 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
                     // 读取文件元数据
                     if let Ok(metadata) = fs::metadata(&path) {
                         if let Ok(modified) = metadata.modified() {
-                            // 读取文件内容的第一行作为标题
-                            let title = if let Ok(content) = fs::read_to_string(&path) {
-                                content
+                            // 读取文件内容并解析 frontmatter
+                            let (name, description, title) = if let Ok(file_content) = fs::read_to_string(&path) {
+                                let frontmatter = parse_frontmatter(&file_content);
+                                let name = frontmatter
+                                    .as_ref()
+                                    .and_then(|fm| fm.get("name"))
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or(skill_name)
+                                    .to_string();
+                                let description = frontmatter
+                                    .as_ref()
+                                    .and_then(|fm| fm.get("description"))
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string();
+                                let title = file_content
                                     .lines()
                                     .find(|line| !line.is_empty() && line.starts_with("#"))
                                     .unwrap_or("")
                                     .trim_start_matches("#")
                                     .trim()
-                                    .to_string()
+                                    .to_string();
+                                (name, description, title)
                             } else {
-                                skill_name.to_string()
+                                (skill_name.to_string(), String::new(), String::new())
                             };
 
                             skills.push(json!({
                                 "id": file_name,
-                                "name": skill_name,
+                                "name": name,
                                 "title": title,
+                                "description": description,
                                 "enabled": enabled,
                                 "type": "file",
                                 "path": path.to_string_lossy(),
@@ -438,6 +508,7 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
         "skills": skills
     }))
 }
+
 
 /// 获取Skill内容
 #[tauri::command]

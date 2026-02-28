@@ -1089,6 +1089,7 @@
   "skills": {
     "title": "ClawHub 技能市场",
     "subtitle": "发现和安装 nanobot 技能",
+    "nodeRequired": "安装技能需要 Node.js 和 npm",
     "visitClawHub": "访问 ClawHub",
     "searchPlaceholder": "搜索技能（如：github, weather, email...）",
     "search": "搜索",
@@ -1130,7 +1131,11 @@
     "copyFailed": "复制失败",
     "loadingDetail": "加载技能详情中...",
     "install": "安装",
+    "installing": "安装中...",
+    "installFailed": "安装失败",
     "uninstall": "卸载",
+    "uninstalling": "卸载中...",
+    "uninstallFailed": "卸载失败",
     "viewDetails": "查看详情"
   }
 }

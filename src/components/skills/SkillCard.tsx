@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { Wrench, Download, ExternalLink } from "lucide-react";
+import { Wrench, Download, Loader2 } from "lucide-react";
 import type { ClawHubSearchResult, SkillListItem } from "../../types/clawhub";
 
 interface SkillCardProps {
   skill: ClawHubSearchResult | SkillListItem;
   isInstalled: boolean;
+  isInstalling?: boolean;
   onInstall: (skill: ClawHubSearchResult | SkillListItem) => void;
   onUninstall: (skill: ClawHubSearchResult | SkillListItem) => void;
   onViewDetails: (skill: ClawHubSearchResult | SkillListItem) => void;
@@ -13,6 +14,7 @@ interface SkillCardProps {
 export default function SkillCard({
   skill,
   isInstalled,
+  isInstalling = false,
   onInstall,
   onUninstall,
   onViewDetails,
@@ -93,10 +95,15 @@ export default function SkillCard({
             <>
               <button
                 onClick={() => onUninstall(skill)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors text-sm font-medium"
+                disabled={isInstalling}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="w-4 h-4 rotate-180" />
-                {t("skills.uninstall")}
+                {isInstalling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 rotate-180" />
+                )}
+                {isInstalling ? t("skills.uninstalling") : t("skills.uninstall")}
               </button>
               <button
                 onClick={() => onViewDetails(skill)}
@@ -109,10 +116,15 @@ export default function SkillCard({
             <>
               <button
                 onClick={() => onInstall(skill)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                disabled={isInstalling}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="w-4 h-4" />
-                {t("skills.install")}
+                {isInstalling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {isInstalling ? t("skills.installing") : t("skills.install")}
               </button>
               <button
                 onClick={() => onViewDetails(skill)}

@@ -1090,6 +1090,7 @@
   "skills": {
     "title": "ClawHub Skills Market",
     "subtitle": "Discover and install skills for nanobot",
+    "nodeRequired": "Installing skills requires Node.js and npm",
     "visitClawHub": "Visit ClawHub",
     "searchPlaceholder": "Search skills (e.g., github, weather, email...)",
     "search": "Search",
@@ -1131,7 +1132,11 @@
     "copyFailed": "Copy failed",
     "loadingDetail": "Loading skill details...",
     "install": "Install",
+    "installing": "Installing...",
+    "installFailed": "Installation failed",
     "uninstall": "Uninstall",
+    "uninstalling": "Uninstalling...",
+    "uninstallFailed": "Uninstallation failed",
     "viewDetails": "View Details"
   }
 }

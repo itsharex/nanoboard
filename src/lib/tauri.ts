@@ -152,4 +152,8 @@ export const clawhubApi = {
     invoke<SkillDetailResponse>("get_clawhub_skill_detail", { slug }),
   getSkillFile: (slug: string, path: string, version?: string) =>
     invoke<string>("get_clawhub_skill_file", { slug, path, version }),
+  installSkill: (slug: string) =>
+    invoke<{ success: boolean; message: string; output: string; slug: string }>("install_clawhub_skill", { slug }),
+  uninstallSkill: (slug: string) =>
+    invoke<{ success: boolean; message: string; output: string; slug: string }>("uninstall_clawhub_skill", { slug }),
 };

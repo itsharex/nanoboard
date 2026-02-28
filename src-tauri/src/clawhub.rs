@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use tauri::command;
+use std::process::Command;
 
 const CLAWHUB_API_BASE: &str = "https://clawhub.ai";
 
@@ -236,4 +237,72 @@ pub async fn get_clawhub_skill_file(
         .map_err(|e| format!("读取响应失败: {}", e))?;
 
     Ok(content)
+}
+
+/// 安装 ClawHub Skill
+#[command]
+pub async fn install_clawhub_skill(slug: String) -> Result<serde_json::Value, String> {
+    // 获取用户主目录
+    let home = dirs::home_dir()
+        .ok_or_else(|| "无法找到用户主目录".to_string())?;
+
+    // 构建命令
+    let output = Command::new("npx")
+        .args(["clawhub@latest", "install", &slug])
+        .current_dir(&home)
+        .output()
+        .map_err(|e| format!("执行安装命令失败: {}. 请确保已安装 Node.js 和 npm。", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(serde_json::json!({
+            "success": true,
+            "message": format!("技能 {} 安装成功", slug),
+            "output": stdout,
+            "slug": slug
+        }))
+    } else {
+        // 检查是否是因为 skill 已存在
+        if stdout.contains("already exists") || stderr.contains("already exists") {
+            Ok(serde_json::json!({
+                "success": true,
+                "message": format!("技能 {} 已安装", slug),
+                "output": stdout,
+                "slug": slug
+            }))
+        } else {
+            Err(format!("安装失败: {}{}", stdout, stderr))
+        }
+    }
+}
+
+/// 卸载 ClawHub Skill
+#[command]
+pub async fn uninstall_clawhub_skill(slug: String) -> Result<serde_json::Value, String> {
+    // 获取用户主目录
+    let home = dirs::home_dir()
+        .ok_or_else(|| "无法找到用户主目录".to_string())?;
+
+    // 构建命令
+    let output = Command::new("npx")
+        .args(["clawhub@latest", "uninstall", &slug])
+        .current_dir(&home)
+        .output()
+        .map_err(|e| format!("执行卸载命令失败: {}. 请确保已安装 Node.js 和 npm。", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        Ok(serde_json::json!({
+            "success": true,
+            "message": format!("技能 {} 卸载成功", slug),
+            "output": stdout,
+            "slug": slug
+        }))
+    } else {
+        Err(format!("卸载失败: {}{}", stdout, stderr))
+    }
 }
