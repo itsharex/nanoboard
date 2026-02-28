@@ -168,6 +168,14 @@ export default function Logs() {
     try {
       const result = await loggerApi.getLogs(500);
       setLogs(result.logs || []);
+      // 加载完成后滚动到底部
+      setTimeout(() => {
+        virtuosoRef.current?.scrollToIndex({
+          index: (result.logs?.length || 0) - 1,
+          align: 'end',
+          behavior: 'auto'
+        });
+      }, 100);
     } catch { toast.showError(t("logs.loadLogsFailed")); }
     finally { setLoading(false); }
   }
@@ -424,6 +432,7 @@ export default function Logs() {
             data={filteredLogs}
             itemContent={(_index, log) => <LogItem log={log} />}
             followOutput={streaming ? 'smooth' : false}
+            initialTopMostItemIndex={Number.MAX_SAFE_INTEGER}
           />
         </div>
       )}

@@ -90,18 +90,18 @@ export default function ProviderSection({
                     }`}
                   >
                     <div className="w-full p-4 text-left">
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-2">
                         <div
-                          className="flex items-center gap-2 flex-1 cursor-pointer"
+                          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                           onClick={() => onApplyProviderConfig(provider.id)}
                         >
-                          <div className={`p-2 rounded-lg ${provider.colorClass.split(" text-")[0]}`}>
+                          <div className={`shrink-0 p-2 rounded-lg ${provider.colorClass.split(" text-")[0]}`}>
                             <ProviderIcon
                               name={provider.icon}
                               className={`w-5 h-5 ${"text-" + provider.colorClass.split(" text-")[1]}`}
                             />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 overflow-hidden">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary text-sm">
                                 {t(provider.nameKey)}
@@ -133,7 +133,7 @@ export default function ProviderSection({
                               )}
                             </div>
                             {providerAgentCfg.model && (
-                              <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-1 truncate font-mono">
+                              <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-1 font-mono break-all">
                                 {providerAgentCfg.model}
                               </p>
                             )}
@@ -149,7 +149,7 @@ export default function ProviderSection({
                               activeTab: "api",
                             });
                           }}
-                          className="p-2 bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle group-hover:border-blue-200 dark:group-hover:border-blue-500/50 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          className="shrink-0 p-2 bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle group-hover:border-blue-200 dark:group-hover:border-blue-500/50 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30"
                           title={`${t("config.apiConfig")} & ${t("config.agentConfig")}`}
                         >
                           <Settings className="w-5 h-5 text-gray-400 dark:text-dark-text-muted group-hover:text-blue-600 dark:group-hover:text-blue-400" />
