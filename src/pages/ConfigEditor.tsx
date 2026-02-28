@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { configApi } from "../lib/tauri";
 import { useToast } from "../contexts/ToastContext";
@@ -145,6 +145,29 @@ export default function ConfigEditor() {
   }>({ isOpen: false, serverId: "", server: null, mode: "add" });
   const toast = useToast();
 
+  // 防抖自动保存功能
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 防抖保存函数（500ms）
+  const debouncedAutoSave = useCallback((updatedConfig: Config) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const configToSave = cleanConfigForSave(updatedConfig);
+        await configApi.save(configToSave);
+        setOriginalConfig(updatedConfig);
+        setCode(JSON.stringify(updatedConfig, null, 2));
+        console.log('[AutoSave] Configuration saved successfully');
+      } catch (error) {
+        console.error('[AutoSave] Failed to save:', error);
+        // 不显示错误提示，避免频繁打扰用户
+      }
+    }, 500);
+  }, []);
+
   // 代码编辑器模式状态
   const [viewMode, setViewMode] = useState<"visual" | "code">("visual");
   const [originalConfig, setOriginalConfig] = useState<Config>({});
@@ -155,6 +178,13 @@ export default function ConfigEditor() {
   useEffect(() => {
     loadConfig();
     checkAllOAuthStatuses();
+    
+    // 清理函数：组件卸载时清除定时器
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, []);
 
   // 检查所有 OAuth provider 的 token 状态
@@ -445,15 +475,8 @@ export default function ConfigEditor() {
     const providerName = providerInfo?.id || providerId;
     toast.showSuccess(t("config.applyProviderConfig", { name: providerName }));
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   // 有效的 channel 名称列表（根据 nanobot 官方文档）
@@ -625,16 +648,8 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      // 同步更新代码编辑器状态
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   async function removeProvider(name: string) {
@@ -643,16 +658,8 @@ export default function ConfigEditor() {
     const updatedConfig = { ...config, providers: newProviders };
     setConfig(updatedConfig);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      // 同步更新代码编辑器状态
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   async function updateChannel(name: string, enabled: boolean) {
@@ -668,16 +675,8 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      // 同步更新代码编辑器状态
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   async function updateChannelField(channelKey: string, field: string, value: any) {
@@ -694,16 +693,8 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      // 同步更新代码编辑器状态
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   // 更新 channels 顶层配置（如 sendProgress, sendToolHints）
@@ -717,15 +708,8 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   async function updateToolsConfig(field: string, value: any) {
@@ -738,16 +722,11 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    // 自动保存
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-      toast.showSuccess(value ? t("config.restrictEnabled") : t("config.restrictDisabled"));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
+    
+    // 显示成功提示
+    toast.showSuccess(value ? t("config.restrictEnabled") : t("config.restrictDisabled"));
   }
 
   // 更新 tools.exec 配置
@@ -764,14 +743,8 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   // 更新 tools.web.search 配置
@@ -791,14 +764,8 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
   }
 
   // MCP Server 相关函数
@@ -825,15 +792,10 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-      toast.showSuccess(t("mcp.serverSaved"));
-    } catch (error) {
-      toast.showError(t("mcp.serverSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
+    
+    toast.showSuccess(t("mcp.serverSaved"));
   }
 
   // 切换 MCP Server 启用/禁用状态
@@ -865,15 +827,10 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-      toast.showSuccess(newDisabled ? t("mcp.serverDisabled") : t("mcp.serverEnabled"));
-    } catch (error) {
-      toast.showError(t("config.autoSaveFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
+    
+    toast.showSuccess(newDisabled ? t("mcp.serverDisabled") : t("mcp.serverEnabled"));
   }
 
   async function deleteMcpServer(serverId: string) {
@@ -896,15 +853,10 @@ export default function ConfigEditor() {
     };
     setConfig(updatedConfig);
 
-    try {
-      const configToSave = cleanConfigForSave(updatedConfig);
-      await configApi.save(configToSave);
-      setOriginalConfig(updatedConfig);
-      setCode(JSON.stringify(updatedConfig, null, 2));
-      toast.showSuccess(t("mcp.serverDeleted"));
-    } catch (error) {
-      toast.showError(t("mcp.serverDeleteFailed"));
-    }
+    // 自动保存（防抖）
+    debouncedAutoSave(updatedConfig);
+    
+    toast.showSuccess(t("mcp.serverDeleted"));
   }
 
   async function loadHistory() {
@@ -999,6 +951,9 @@ export default function ConfigEditor() {
     setCode(JSON.stringify(template.config, null, 2));
     toast.showSuccess(t("config.templateLoaded", { name: template.name }));
     setShowTemplates(false);
+    
+    // 自动保存（防抖）
+    debouncedAutoSave(template.config);
   }
 
   function deleteTemplate(template: ConfigTemplate) {

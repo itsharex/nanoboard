@@ -16,6 +16,10 @@ export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 300, height: 128 });
+  
+  // EMA 平滑状态
+  const emaRef = useRef({ upload: 0, download: 0 });
+  const EMA_ALPHA = 0.3; // EMA 系数：0.3 表示新数据占 30%，旧数据占 70%
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -30,39 +34,47 @@ export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // 只显示最近60个数据点（60秒）
+  // 只显示最近 60 个数据点（60 秒）
   const displayData = data.slice(-60);
   const maxDataPoints = 60;
 
-  // 计算Y轴范围
-  const allValues = displayData.flatMap(d => [d.upload, d.download]);
+  // 使用 EMA 平滑数据
+  const smoothedData = displayData.map((point) => {
+    emaRef.current.upload = EMA_ALPHA * point.upload + (1 - EMA_ALPHA) * emaRef.current.upload;
+    emaRef.current.download = EMA_ALPHA * point.download + (1 - EMA_ALPHA) * emaRef.current.download;
+    
+    return {
+      timestamp: point.timestamp,
+      upload: emaRef.current.upload,
+      download: emaRef.current.download,
+    };
+  });
+
+  // 计算 Y 轴范围
+  const allValues = smoothedData.flatMap(d => [d.upload, d.download]);
   const maxValue = Math.max(...allValues, 100) / 1024; // 转换为 MB/s
-  const yAxisMax = Math.ceil(maxValue * 1.2); // 留20%顶部空间
+  const yAxisMax = Math.ceil(maxValue * 1.2); // 留 20% 顶部空间
 
   // 计算路径
-  const uploadPath = displayData.map((d, i) => {
+  const uploadPath = smoothedData.map((d, i) => {
     const x = (i / (maxDataPoints - 1)) * dimensions.width;
     const y = dimensions.height - (d.upload / 1024 / yAxisMax) * dimensions.height;
     return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
   }).join(' ');
 
-  const downloadPath = displayData.map((d, i) => {
+  const downloadPath = smoothedData.map((d, i) => {
     const x = (i / (maxDataPoints - 1)) * dimensions.width;
     const y = dimensions.height - (d.download / 1024 / yAxisMax) * dimensions.height;
     return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
   }).join(' ');
 
-  // 当前值（使用最近几个数据点的平均值，避免突然的0）
-  const currentUpload = displayData.length > 0
-    ? displayData.slice(-3).reduce((sum, d) => sum + d.upload, 0) / Math.min(displayData.length, 3)
-    : 0;
-  const currentDownload = displayData.length > 0
-    ? displayData.slice(-3).reduce((sum, d) => sum + d.download, 0) / Math.min(displayData.length, 3)
-    : 0;
+  // 当前值（使用 EMA 平滑后的值）
+  const currentUpload = smoothedData.length > 0 ? smoothedData[smoothedData.length - 1].upload : 0;
+  const currentDownload = smoothedData.length > 0 ? smoothedData[smoothedData.length - 1].download : 0;
 
   function formatSpeed(bytes: number): string {
-    // 如果值非常小但大于0，显示最小值而不是0
-    const displayValue = bytes > 0 && bytes < 0.1 ? 0.1 : bytes;
+    // 使用更智能的最小值处理：当网络速度归零时，平滑过渡到 0
+    const displayValue = bytes > 0 && bytes < 0.1 ? Math.max(bytes, 0.1) : bytes;
 
     if (displayValue < 1024) {
       return `${displayValue.toFixed(1)} B/s`;
