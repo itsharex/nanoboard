@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Wrench, Download, Loader2 } from "lucide-react";
 import type { ClawHubSearchResult, SkillListItem } from "../../types/clawhub";
@@ -11,7 +12,7 @@ interface SkillCardProps {
   onViewDetails: (skill: ClawHubSearchResult | SkillListItem) => void;
 }
 
-export default function SkillCard({
+export default memo(function SkillCard({
   skill,
   isInstalled,
   isInstalling = false,
@@ -138,4 +139,4 @@ export default function SkillCard({
       </div>
     </div>
   );
-}
+});

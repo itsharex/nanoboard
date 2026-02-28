@@ -27,7 +27,7 @@ function formatTime(timestamp: number): string {
   return `${Math.floor(days / 365)} 年前`;
 }
 
-export default function SkillsMarket() {
+export default memo(function SkillsMarket() {
   const { t } = useTranslation();
   const toast = useToast();
 
@@ -50,7 +50,14 @@ export default function SkillsMarket() {
   const loadInstalledSkills = useCallback(async () => {
     try {
       const slugs = await clawhubApi.getInstalledSkills();
-      setInstalledSkills(new Set(slugs));
+      setInstalledSkills(prev => {
+        const newSet = new Set(slugs);
+        // 只有当内容真正变化时才更新
+        if (prev.size === newSet.size && [...prev].every(slug => newSet.has(slug))) {
+          return prev;
+        }
+        return newSet;
+      });
     } catch (error) {
       console.error("Failed to load installed skills:", error);
     }
@@ -134,8 +141,8 @@ export default function SkillsMarket() {
       const result = await clawhubApi.installSkill(slug);
       if (result.success) {
         toast.showSuccess(result.message);
-        // 刷新已安装技能列表
-        await loadInstalledSkills();
+        // 只更新 Set，避免触发不必要的重新渲染
+        setInstalledSkills(prev => new Set([...prev, slug]));
       } else {
         toast.showError(result.message);
       }
@@ -144,7 +151,7 @@ export default function SkillsMarket() {
     } finally {
       setInstallingSlug(null);
     }
-  }, [t, toast, loadInstalledSkills]);
+  }, [t, toast]);
 
   const handleUninstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
@@ -153,8 +160,12 @@ export default function SkillsMarket() {
       const result = await clawhubApi.uninstallSkill(slug);
       if (result.success) {
         toast.showSuccess(result.message);
-        // 刷新已安装技能列表
-        await loadInstalledSkills();
+        // 只更新 Set，避免触发不必要的重新渲染
+        setInstalledSkills(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(slug);
+          return newSet;
+        });
       } else {
         toast.showError(result.message);
       }
@@ -163,7 +174,7 @@ export default function SkillsMarket() {
     } finally {
       setInstallingSlug(null);
     }
-  }, [t, toast, loadInstalledSkills]);
+  }, [t, toast]);
 
   // 使用 useMemo 缓存分类列表
   const categories = useMemo(() => 
@@ -267,8 +278,8 @@ export default function SkillsMarket() {
 
       {/* 技能详情侧边栏 */}
       {(loadingSkillSlug || selectedSkill) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-dark-bg-card rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeDetail}>
+          <div className="bg-white dark:bg-dark-bg-card rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             {loadingDetail && !selectedSkill ? (
               <div className="p-4 flex flex-col items-center justify-center h-48 text-gray-500 dark:text-dark-text-secondary">
                 <RefreshCw className="w-8 h-8 animate-spin mb-3" />
@@ -359,4 +370,4 @@ export default function SkillsMarket() {
       )}
     </div>
   );
-}
+});
