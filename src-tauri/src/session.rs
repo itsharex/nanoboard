@@ -377,16 +377,20 @@ pub async fn list_skills() -> Result<serde_json::Value, String> {
                         continue;
                     }
 
-                    // 检查是否有 SKILL.md 或 SKILL.md.disabled 文件
+                    // 检查是否有 SKILL.md 或 SKILL.md.disabled 文件（优先）
                     let skill_file_enabled = path.join("SKILL.md");
                     let skill_file_disabled = path.join("SKILL.md.disabled");
+                    let readme_file = path.join("README.md");
 
                     let (skill_file, enabled, skill_filename) = if skill_file_enabled.exists() {
                         (skill_file_enabled, true, "SKILL.md")
                     } else if skill_file_disabled.exists() {
                         (skill_file_disabled, false, "SKILL.md.disabled")
+                    } else if readme_file.exists() {
+                        // 降级处理：使用 README.md 作为技能文件
+                        (readme_file, true, "README.md")
                     } else {
-                        // 目录中没有 SKILL.md 文件，跳过
+                        // 目录中没有 SKILL.md 或 README.md 文件，跳过
                         continue;
                     };
 
@@ -545,21 +549,38 @@ pub async fn get_skill_content(skill_id: String) -> Result<serde_json::Value, St
 #[tauri::command]
 pub async fn delete_skill(skill_id: String) -> Result<serde_json::Value, String> {
     let skills_path = get_skills_path().map_err(|e| e.to_string())?;
-    let skill_path = skills_path.join(&skill_id);
+    
+    // 解析 skill_id: 格式为 "dir_name/filename" 或 "filename"
+    let skill_dir_name = if skill_id.contains('/') {
+        // 目录型技能：提取目录名
+        skill_id.split('/').next().unwrap_or(&skill_id)
+    } else {
+        // 文件型技能：直接使用 skill_id（不包含扩展名）
+        skill_id.trim_end_matches(".md").trim_end_matches(".md.disabled")
+    };
+    
+    let skill_dir_path = skills_path.join(skill_dir_name);
 
-    if !skill_path.exists() {
+    if !skill_dir_path.exists() {
         return Ok(json!({
             "success": false,
-            "message": format!("Skill {} 不存在", skill_id)
+            "message": format!("Skill {} 不存在", skill_dir_name)
         }));
     }
 
-    fs::remove_file(&skill_path)
-        .map_err(|e| format!("删除Skill失败: {}", e))?;
+    // 删除整个技能目录
+    if skill_dir_path.is_dir() {
+        fs::remove_dir_all(&skill_dir_path)
+            .map_err(|e| format!("删除 Skill 目录失败：{}", e))?;
+    } else {
+        // 兼容旧格式：如果是文件，直接删除
+        fs::remove_file(&skill_dir_path)
+            .map_err(|e| format!("删除 Skill 文件失败：{}", e))?;
+    }
 
     Ok(json!({
         "success": true,
-        "message": format!("Skill {} 已删除", skill_id)
+        "message": format!("Skill {} 已删除", skill_dir_name)
     }))
 }
 
@@ -568,30 +589,48 @@ pub async fn delete_skill(skill_id: String) -> Result<serde_json::Value, String>
 pub async fn toggle_skill(skill_id: String, enabled: bool) -> Result<serde_json::Value, String> {
     let skills_path = get_skills_path().map_err(|e| e.to_string())?;
 
-    // 根据当前状态确定源文件和目标文件
-    let (source_path, target_path, new_id) = if skill_id.ends_with(".md.disabled") {
-        // 当前是禁用状态，要启用
-        let source = skills_path.join(&skill_id);
-        let name = skill_id.trim_end_matches(".md.disabled");
-        let target = skills_path.join(format!("{}.md", name));
-        (source, target, format!("{}.md", name))
-    } else if skill_id.ends_with(".md") {
-        // 当前是启用状态，要禁用
-        let source = skills_path.join(&skill_id);
-        let name = skill_id.trim_end_matches(".md");
-        let target = skills_path.join(format!("{}.md.disabled", name));
-        (source, target, format!("{}.md.disabled", name))
+    // 解析 skill_id: 格式为 "dir_name/filename"
+    let (skill_dir_name, skill_filename) = if skill_id.contains('/') {
+        let parts: Vec<&str> = skill_id.split('/').collect();
+        (parts[0], parts[1])
     } else {
         return Ok(json!({
             "success": false,
-            "message": format!("无效的 Skill 文件名: {}", skill_id)
+            "message": format!("无效的 Skill ID 格式：{}", skill_id)
+        }));
+    };
+
+    let skill_dir_path = skills_path.join(skill_dir_name);
+    
+    if !skill_dir_path.exists() {
+        return Ok(json!({
+            "success": false,
+            "message": format!("Skill {} 不存在", skill_dir_name)
+        }));
+    }
+
+    // 根据当前状态确定源文件和目标文件
+    let (source_path, target_path, new_id) = if skill_filename == "SKILL.md.disabled" {
+        // 当前是禁用状态，要启用
+        let source = skill_dir_path.join("SKILL.md.disabled");
+        let target = skill_dir_path.join("SKILL.md");
+        (source, target, format!("{}/SKILL.md", skill_dir_name))
+    } else if skill_filename == "SKILL.md" {
+        // 当前是启用状态，要禁用
+        let source = skill_dir_path.join("SKILL.md");
+        let target = skill_dir_path.join("SKILL.md.disabled");
+        (source, target, format!("{}/SKILL.md.disabled", skill_dir_name))
+    } else {
+        return Ok(json!({
+            "success": false,
+            "message": format!("不支持切换非 SKILL.md 文件：{}", skill_filename)
         }));
     };
 
     if !source_path.exists() {
         return Ok(json!({
             "success": false,
-            "message": format!("Skill {} 不存在", skill_id)
+            "message": format!("Skill 文件 {} 不存在", source_path.display())
         }));
     }
 
@@ -604,7 +643,7 @@ pub async fn toggle_skill(skill_id: String, enabled: bool) -> Result<serde_json:
     }
 
     fs::rename(&source_path, &target_path)
-        .map_err(|e| format!("重命名 Skill 失败: {}", e))?;
+        .map_err(|e| format!("重命名 Skill 失败：{}", e))?;
 
     Ok(json!({
         "success": true,
