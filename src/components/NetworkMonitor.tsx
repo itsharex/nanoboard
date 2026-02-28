@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -12,7 +12,7 @@ interface NetworkMonitorProps {
   data?: NetworkData[];
 }
 
-export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
+export default memo(function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 300, height: 128 });
@@ -35,42 +35,47 @@ export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
   }, []);
 
   // 只显示最近 60 个数据点（60 秒）
-  const displayData = data.slice(-60);
+  const displayData = useMemo(() => data.slice(-60), [data]);
   const maxDataPoints = 60;
 
-  // 使用 EMA 平滑数据
-  const smoothedData = displayData.map((point) => {
-    emaRef.current.upload = EMA_ALPHA * point.upload + (1 - EMA_ALPHA) * emaRef.current.upload;
-    emaRef.current.download = EMA_ALPHA * point.download + (1 - EMA_ALPHA) * emaRef.current.download;
-    
-    return {
-      timestamp: point.timestamp,
-      upload: emaRef.current.upload,
-      download: emaRef.current.download,
-    };
-  });
+  // 使用 useMemo 缓存 SVG 路径计算
+  const { smoothedData, uploadPath, downloadPath, currentUpload, currentDownload, yAxisMax } = useMemo(() => {
+    // 使用 EMA 平滑数据
+    const smoothed = displayData.map((point) => {
+      emaRef.current.upload = EMA_ALPHA * point.upload + (1 - EMA_ALPHA) * emaRef.current.upload;
+      emaRef.current.download = EMA_ALPHA * point.download + (1 - EMA_ALPHA) * emaRef.current.download;
+      
+      return {
+        timestamp: point.timestamp,
+        upload: emaRef.current.upload,
+        download: emaRef.current.download,
+      };
+    });
 
-  // 计算 Y 轴范围
-  const allValues = smoothedData.flatMap(d => [d.upload, d.download]);
-  const maxValue = Math.max(...allValues, 100) / 1024; // 转换为 MB/s
-  const yAxisMax = Math.ceil(maxValue * 1.2); // 留 20% 顶部空间
+    // 计算 Y 轴范围
+    const allValues = smoothed.flatMap(d => [d.upload, d.download]);
+    const maxValue = Math.max(...allValues, 100) / 1024; // 转换为 MB/s
+    const yAxisMax = Math.ceil(maxValue * 1.2); // 留 20% 顶部空间
 
-  // 计算路径
-  const uploadPath = smoothedData.map((d, i) => {
-    const x = (i / (maxDataPoints - 1)) * dimensions.width;
-    const y = dimensions.height - (d.upload / 1024 / yAxisMax) * dimensions.height;
-    return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-  }).join(' ');
+    // 计算路径
+    const uploadPath = smoothed.map((d, i) => {
+      const x = (i / (maxDataPoints - 1)) * dimensions.width;
+      const y = dimensions.height - (d.upload / 1024 / yAxisMax) * dimensions.height;
+      return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+    }).join(' ');
 
-  const downloadPath = smoothedData.map((d, i) => {
-    const x = (i / (maxDataPoints - 1)) * dimensions.width;
-    const y = dimensions.height - (d.download / 1024 / yAxisMax) * dimensions.height;
-    return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-  }).join(' ');
+    const downloadPath = smoothed.map((d, i) => {
+      const x = (i / (maxDataPoints - 1)) * dimensions.width;
+      const y = dimensions.height - (d.download / 1024 / yAxisMax) * dimensions.height;
+      return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+    }).join(' ');
 
-  // 当前值（使用 EMA 平滑后的值）
-  const currentUpload = smoothedData.length > 0 ? smoothedData[smoothedData.length - 1].upload : 0;
-  const currentDownload = smoothedData.length > 0 ? smoothedData[smoothedData.length - 1].download : 0;
+    // 当前值（使用 EMA 平滑后的值）
+    const currentUpload = smoothed.length > 0 ? smoothed[smoothed.length - 1].upload : 0;
+    const currentDownload = smoothed.length > 0 ? smoothed[smoothed.length - 1].download : 0;
+
+    return { smoothedData: smoothed, uploadPath, downloadPath, currentUpload, currentDownload, yAxisMax };
+  }, [displayData, dimensions]);
 
   function formatSpeed(bytes: number): string {
     // 使用更智能的最小值处理：当网络速度归零时，平滑过渡到 0
@@ -153,4 +158,4 @@ export default function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
       </div>
     </div>
   );
-}
+});

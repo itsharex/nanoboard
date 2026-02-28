@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ExternalLink, RefreshCw, X } from "lucide-react";
 import { clawhubApi } from "@/lib/tauri";
@@ -102,14 +102,17 @@ export default function SkillsMarket() {
 
   const closeDetail = () => { setSelectedSkill(null); setSkillFileContent(null); };
 
-  const getInstallCommand = (slug: string) => `npx clawhub@latest install ${slug}`;
+  const getInstallCommand = useCallback((slug: string) => `npx clawhub@latest install ${slug}`, []);
 
-  const copyInstallCommand = (slug: string) => {
+  const copyInstallCommand = useCallback((slug: string) => {
     navigator.clipboard.writeText(getInstallCommand(slug));
     toast.showSuccess(t("skills.commandCopied"));
-  };
+  }, [getInstallCommand, t, toast]);
 
-  const categories = Array.from(new Set(skills.map((s: any) => (s as any).category).filter(Boolean))) as string[];
+  // 使用 useMemo 缓存分类列表
+  const categories = useMemo(() => 
+    Array.from(new Set(skills.map((s: any) => (s as any).category).filter(Boolean))) as string[],
+  [skills]);
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-dark-bg-base transition-colors duration-200">

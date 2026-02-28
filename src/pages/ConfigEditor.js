@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, History, Code, Plus, FolderOpen, Trash2 } from "lucide-react";
 import { configApi } from "../lib/tauri";
@@ -70,7 +70,7 @@ export default function ConfigEditor() {
     // Hooks
     const { getProviderAgentConfig, updateProviderAgentConfig, buildAgentDefaults } = useProviderAgentConfig();
     const { loadMcpServersConfig, saveMcpServersConfig, mergeMcpConfig } = useMcpServersConfig();
-    // 自动保存
+    // 自动保存 - 使用 useMemo 缓存清理后的配置
     const handleSave = useCallback(async (updatedConfig) => {
         try {
             const configToSave = cleanConfigForSave(updatedConfig, mcpServersConfig);
@@ -84,6 +84,8 @@ export default function ConfigEditor() {
         }
     }, [mcpServersConfig]);
     const debouncedAutoSave = useAutoSave({ onSave: handleSave, delay: 500 });
+    // 缓存 OAuth providers 列表
+    const oauthProviders = useMemo(() => AVAILABLE_PROVIDERS.filter(p => p.loginCommand), []);
     // 加载配置
     useEffect(() => {
         loadConfig();
@@ -141,8 +143,7 @@ export default function ConfigEditor() {
             setLoading(false);
         }
     }
-    async function checkAllOAuthStatuses() {
-        const oauthProviders = AVAILABLE_PROVIDERS.filter((p) => p.loginCommand);
+    const checkAllOAuthStatuses = useCallback(async () => {
         const statuses = {};
         await Promise.all(oauthProviders.map(async (provider) => {
             if (!provider.loginCommand)
@@ -156,123 +157,142 @@ export default function ConfigEditor() {
             }
         }));
         setOauthTokenStatuses(statuses);
-    }
-    function toggleSection(section) {
-        const newExpanded = new Set(expandedSections);
-        if (newExpanded.has(section)) {
-            newExpanded.delete(section);
-        }
-        else {
-            newExpanded.add(section);
-        }
-        setExpandedSections(newExpanded);
-    }
-    async function updateProvider(name, field, value) {
-        const currentProvider = config.providers?.[name] || { name };
-        const updatedConfig = {
-            ...config,
-            providers: {
-                ...config.providers,
-                [name]: {
-                    ...currentProvider,
-                    [field]: value,
-                },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function removeProvider(name) {
-        const newProviders = { ...config.providers };
-        delete newProviders[name];
-        const updatedConfig = { ...config, providers: newProviders };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function updateChannel(name, enabled) {
-        const updatedConfig = {
-            ...config,
-            channels: {
-                ...config.channels,
-                [name]: {
-                    ...config.channels?.[name],
-                    enabled,
-                },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function updateChannelField(channelKey, field, value) {
-        const currentChannel = config.channels?.[channelKey] || {};
-        const updatedConfig = {
-            ...config,
-            channels: {
-                ...config.channels,
-                [channelKey]: {
-                    ...currentChannel,
-                    [field]: value,
-                },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function updateChannelsTopLevel(field, value) {
-        const updatedConfig = {
-            ...config,
-            channels: {
-                ...config.channels,
-                [field]: value,
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function updateToolsExecConfig(field, value) {
-        const updatedConfig = {
-            ...config,
-            tools: {
-                ...config.tools,
-                exec: {
-                    ...config.tools?.exec,
-                    [field]: value,
-                },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function updateToolsWebSearchConfig(field, value) {
-        const updatedConfig = {
-            ...config,
-            tools: {
-                ...config.tools,
-                web: {
-                    ...config.tools?.web,
-                    search: {
-                        ...config.tools?.web?.search,
+    }, [oauthProviders]);
+    const toggleSection = useCallback((section) => {
+        setExpandedSections(prev => {
+            const newExpanded = new Set(prev);
+            if (newExpanded.has(section)) {
+                newExpanded.delete(section);
+            }
+            else {
+                newExpanded.add(section);
+            }
+            return newExpanded;
+        });
+    }, []);
+    // 使用 useCallback 缓存更新函数，避免不必要的重渲染
+    const updateProvider = useCallback(async (name, field, value) => {
+        setConfig(prev => {
+            const currentProvider = prev.providers?.[name] || { name };
+            const updatedConfig = {
+                ...prev,
+                providers: {
+                    ...prev.providers,
+                    [name]: {
+                        ...currentProvider,
                         [field]: value,
                     },
                 },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
-    }
-    async function updateToolsConfig(field, value) {
-        const updatedConfig = {
-            ...config,
-            tools: {
-                ...config.tools,
-                [field]: value,
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const removeProvider = useCallback(async (name) => {
+        setConfig(prev => {
+            const newProviders = { ...prev.providers };
+            delete newProviders[name];
+            const updatedConfig = { ...prev, providers: newProviders };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const updateChannel = useCallback(async (name, enabled) => {
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                channels: {
+                    ...prev.channels,
+                    [name]: {
+                        ...prev.channels?.[name],
+                        enabled,
+                    },
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const updateChannelField = useCallback(async (channelKey, field, value) => {
+        setConfig(prev => {
+            const currentChannel = prev.channels?.[channelKey] || {};
+            const updatedConfig = {
+                ...prev,
+                channels: {
+                    ...prev.channels,
+                    [channelKey]: {
+                        ...currentChannel,
+                        [field]: value,
+                    },
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const updateChannelsTopLevel = useCallback(async (field, value) => {
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                channels: {
+                    ...prev.channels,
+                    [field]: value,
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const updateToolsExecConfig = useCallback(async (field, value) => {
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                tools: {
+                    ...prev.tools,
+                    exec: {
+                        ...prev.tools?.exec,
+                        [field]: value,
+                    },
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const updateToolsWebSearchConfig = useCallback(async (field, value) => {
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                tools: {
+                    ...prev.tools,
+                    web: {
+                        ...prev.tools?.web,
+                        search: {
+                            ...prev.tools?.web?.search,
+                            [field]: value,
+                        },
+                    },
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
+    }, [debouncedAutoSave]);
+    const updateToolsConfig = useCallback(async (field, value) => {
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                tools: {
+                    ...prev.tools,
+                    [field]: value,
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
         toast.showSuccess(value ? t("config.restrictEnabled") : t("config.restrictDisabled"));
-    }
-    async function saveMcpServer(serverId, server) {
+    }, [debouncedAutoSave, t]);
+    const saveMcpServer = useCallback(async (serverId, server) => {
         const serverWithState = { ...server, disabled: false };
         const updatedMcpConfig = {
             ...mcpServersConfig,
@@ -280,21 +300,23 @@ export default function ConfigEditor() {
         };
         setMcpServersConfig(updatedMcpConfig);
         saveMcpServersConfig(updatedMcpConfig);
-        const updatedConfig = {
-            ...config,
-            tools: {
-                ...config.tools,
-                mcpServers: {
-                    ...config.tools?.mcpServers,
-                    [serverId]: serverWithState,
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                tools: {
+                    ...prev.tools,
+                    mcpServers: {
+                        ...prev.tools?.mcpServers,
+                        [serverId]: serverWithState,
+                    },
                 },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
         toast.showSuccess(t("mcp.serverSaved"));
-    }
-    async function toggleMcpServer(serverId) {
+    }, [mcpServersConfig, saveMcpServersConfig, debouncedAutoSave, t]);
+    const toggleMcpServer = useCallback(async (serverId) => {
         const currentServer = mcpServersConfig[serverId];
         if (!currentServer)
             return;
@@ -306,39 +328,43 @@ export default function ConfigEditor() {
         };
         setMcpServersConfig(updatedMcpConfig);
         saveMcpServersConfig(updatedMcpConfig);
-        const updatedConfig = {
-            ...config,
-            tools: {
-                ...config.tools,
-                mcpServers: {
-                    ...config.tools?.mcpServers,
-                    [serverId]: updatedServer,
+        setConfig(prev => {
+            const updatedConfig = {
+                ...prev,
+                tools: {
+                    ...prev.tools,
+                    mcpServers: {
+                        ...prev.tools?.mcpServers,
+                        [serverId]: updatedServer,
+                    },
                 },
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
         toast.showSuccess(newDisabled ? t("mcp.serverDisabled") : t("mcp.serverEnabled"));
-    }
-    async function deleteMcpServer(serverId) {
+    }, [mcpServersConfig, saveMcpServersConfig, debouncedAutoSave, t]);
+    const deleteMcpServer = useCallback(async (serverId) => {
         const updatedMcpConfig = { ...mcpServersConfig };
         delete updatedMcpConfig[serverId];
         setMcpServersConfig(updatedMcpConfig);
         saveMcpServersConfig(updatedMcpConfig);
-        const currentServers = { ...config.tools?.mcpServers };
-        delete currentServers[serverId];
-        const updatedConfig = {
-            ...config,
-            tools: {
-                ...config.tools,
-                mcpServers: currentServers,
-            },
-        };
-        setConfig(updatedConfig);
-        debouncedAutoSave(updatedConfig);
+        setConfig(prev => {
+            const currentServers = { ...prev.tools?.mcpServers };
+            delete currentServers[serverId];
+            const updatedConfig = {
+                ...prev,
+                tools: {
+                    ...prev.tools,
+                    mcpServers: currentServers,
+                },
+            };
+            debouncedAutoSave(updatedConfig);
+            return updatedConfig;
+        });
         toast.showSuccess(t("mcp.serverDeleted"));
-    }
-    async function loadHistory() {
+    }, [mcpServersConfig, saveMcpServersConfig, debouncedAutoSave, t]);
+    const loadHistory = useCallback(async () => {
         setLoadingHistory(true);
         try {
             const versions = await configApi.getHistory();
@@ -350,8 +376,8 @@ export default function ConfigEditor() {
         finally {
             setLoadingHistory(false);
         }
-    }
-    function restoreVersion(version) {
+    }, [t, toast]);
+    const restoreVersion = useCallback((version) => {
         setConfirmDialog({
             isOpen: true,
             title: t("config.confirmRestore"),
@@ -360,7 +386,7 @@ export default function ConfigEditor() {
                 try {
                     await configApi.restoreVersion(version.filename);
                     await loadConfig();
-                    await loadHistory();
+                    loadHistory();
                     toast.showSuccess(t("config.versionRestored"));
                 }
                 catch (error) {
@@ -371,18 +397,18 @@ export default function ConfigEditor() {
                 }
             },
         });
-    }
-    async function deleteVersion(version) {
+    }, [t, i18n.language, loadHistory, toast]);
+    const deleteVersion = useCallback(async (version) => {
         try {
             await configApi.deleteVersion(version.filename);
-            await loadHistory();
+            loadHistory();
             toast.showSuccess(t("config.versionDeleted"));
         }
         catch (error) {
             toast.showError(t("config.deleteVersionFailed"));
         }
-    }
-    function loadTemplates() {
+    }, [loadHistory, t, toast]);
+    const loadTemplates = useCallback(() => {
         try {
             const stored = localStorage.getItem(TEMPLATES_STORAGE_KEY);
             if (stored) {
@@ -393,24 +419,24 @@ export default function ConfigEditor() {
         catch (error) {
             console.error(t("config.loadTemplateFailed"), error);
         }
-    }
-    function saveTemplates(data) {
+    }, [t]);
+    const saveTemplates = useCallback((data) => {
         try {
             localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(data ?? templates));
         }
         catch (error) {
             console.error(t("config.saveTemplateFailed"), error);
         }
-    }
-    function applyTemplate(template) {
+    }, [templates, t]);
+    const applyTemplate = useCallback((template) => {
         setConfig(template.config);
         setOriginalConfig(template.config);
         setCode(JSON.stringify(template.config, null, 2));
         toast.showSuccess(t("config.templateLoaded", { name: template.name }));
         setShowTemplates(false);
         debouncedAutoSave(template.config);
-    }
-    function deleteTemplate(template) {
+    }, [debouncedAutoSave, t, toast]);
+    const deleteTemplate = useCallback((template) => {
         setConfirmDialog({
             isOpen: true,
             title: t("config.confirmDeleteTemplate"),
@@ -423,8 +449,8 @@ export default function ConfigEditor() {
                 setConfirmDialog({ isOpen: false, title: "", message: "", onConfirm: () => { } });
             },
         });
-    }
-    function confirmSaveTemplate() {
+    }, [templates, saveTemplates, t, toast]);
+    const confirmSaveTemplate = useCallback(() => {
         if (!templateDialog.name.trim()) {
             toast.showError(t("config.enterTemplateName"));
             return;
@@ -441,8 +467,8 @@ export default function ConfigEditor() {
         saveTemplates(updated);
         toast.showSuccess(t("config.templateSaved"));
         setTemplateDialog({ isOpen: false, mode: "save", name: "", description: "" });
-    }
-    async function saveCodeConfig() {
+    }, [templateDialog, config, templates, saveTemplates, t, toast]);
+    const saveCodeConfig = useCallback(async () => {
         setSavingCode(true);
         try {
             const parsed = JSON.parse(code);
@@ -492,8 +518,8 @@ export default function ConfigEditor() {
         finally {
             setSavingCode(false);
         }
-    }
-    function formatCode() {
+    }, [code, mcpServersConfig, t, toast]);
+    const formatCode = useCallback(() => {
         try {
             const parsed = JSON.parse(code);
             const formatted = JSON.stringify(parsed, null, 2);
@@ -505,8 +531,8 @@ export default function ConfigEditor() {
             setCodeError(`${t("config.formatFailed")}: ${t("config.jsonSyntaxError")}`);
             toast.showError(`${t("config.formatFailed")}: ${t("config.jsonSyntaxError")}`);
         }
-    }
-    function handleCodeChange(newCode) {
+    }, [code, t, toast]);
+    const handleCodeChange = useCallback((newCode) => {
         setCode(newCode);
         try {
             JSON.parse(newCode);
@@ -520,22 +546,21 @@ export default function ConfigEditor() {
                 setCodeError(t("config.jsonSyntaxError"));
             }
         }
-    }
-    async function applyProviderAgentConfig(providerId) {
+    }, [t]);
+    const applyProviderAgentConfig = useCallback(async (providerId) => {
         const providerAgentCfg = getProviderAgentConfig(providerId);
         const mergedConfig = buildAgentDefaults(providerId, providerAgentCfg);
-        const updatedConfig = {
-            ...config,
+        setConfig(prev => ({
+            ...prev,
             agents: {
-                ...config.agents,
+                ...prev.agents,
                 defaults: mergedConfig,
             },
-        };
-        setConfig(updatedConfig);
+        }));
         setSelectedProviderId(providerId);
         toast.showSuccess(t("config.applyProviderConfig", { name: providerId }));
-        debouncedAutoSave(updatedConfig);
-    }
+        debouncedAutoSave({ ...config, agents: { ...config.agents, defaults: mergedConfig } });
+    }, [getProviderAgentConfig, buildAgentDefaults, config, debouncedAutoSave, t, toast]);
     if (loading) {
         return (_jsx("div", { className: "flex-1 flex items-center justify-center bg-white dark:bg-dark-bg-base transition-colors duration-200", children: _jsx("div", { className: "text-gray-500 dark:text-dark-text-muted", children: t("config.loading") }) }));
     }
