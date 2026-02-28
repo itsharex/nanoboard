@@ -17,11 +17,13 @@ import {
   Settings,
   Save,
   RefreshCw,
+  Folder,
+  Terminal,
+  Database,
+  Clock,
+  HardDrive,
 } from "lucide-react";
 import type { DiagnosticResult } from "@/types";
-
-// 自定义路径存储 key
-const CUSTOM_PATHS_KEY = "nanoboard_custom_paths";
 
 // 应用信息
 const APP_INFO = {
@@ -45,16 +47,22 @@ interface SystemInfoData {
 
 type UpdateStatus = "checking" | "latest" | "available" | "error";
 
-// 自定义路径配置
 interface CustomPaths {
   pythonPath: string;
   nanobotPath: string;
 }
 
+interface PathItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  description?: string;
+}
+
 // 加载自定义路径配置
 function loadCustomPaths(): CustomPaths {
   try {
-    const stored = localStorage.getItem(CUSTOM_PATHS_KEY);
+    const stored = localStorage.getItem("nanoboard_custom_paths");
     if (stored) {
       return JSON.parse(stored);
     }
@@ -67,14 +75,14 @@ function loadCustomPaths(): CustomPaths {
 // 保存自定义路径配置
 function saveCustomPaths(paths: CustomPaths) {
   try {
-    localStorage.setItem(CUSTOM_PATHS_KEY, JSON.stringify(paths));
+    localStorage.setItem("nanoboard_custom_paths", JSON.stringify(paths));
   } catch (error) {
     console.error("Failed to save custom paths:", error);
   }
 }
 
 export default function About() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfoData | null>(null);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnosisResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
@@ -83,6 +91,7 @@ export default function About() {
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [customPaths, setCustomPaths] = useState<CustomPaths>(loadCustomPaths);
   const [pathsSaved, setPathsSaved] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     loadSystemInfo();
@@ -92,17 +101,15 @@ export default function About() {
   // 保存自定义路径
   async function handleSavePaths() {
     try {
-      // 保存到后端
       await processApi.setCustomPaths(
         customPaths.pythonPath || undefined,
         customPaths.nanobotPath || undefined
       );
-      // 同时保存到 localStorage 作为备份
       saveCustomPaths(customPaths);
       setPathsSaved(true);
+      setIsEditing(false);
       setTimeout(() => setPathsSaved(false), 2000);
-      // 重新加载系统信息以应用新路径
-      loadSystemInfo();
+      await loadSystemInfo();
     } catch (error) {
       console.error("Failed to save custom paths:", error);
     }
@@ -112,9 +119,10 @@ export default function About() {
   async function handleResetPaths() {
     try {
       await processApi.setCustomPaths(undefined, undefined);
-      setCustomPaths({ pythonPath: "", nanobotPath: "" });
-      saveCustomPaths({ pythonPath: "", nanobotPath: "" });
-      loadSystemInfo();
+      const resetPaths = { pythonPath: "", nanobotPath: "" };
+      setCustomPaths(resetPaths);
+      saveCustomPaths(resetPaths);
+      await loadSystemInfo();
     } catch (error) {
       console.error("Failed to reset custom paths:", error);
     }
@@ -168,7 +176,6 @@ export default function About() {
         pythonPath: pythonPathInfo?.path || null,
       });
 
-      // 如果后端有保存的自定义路径，更新本地状态
       if (customPathsInfo) {
         setCustomPaths({
           pythonPath: customPathsInfo.pythonPath || "",
@@ -206,238 +213,358 @@ export default function About() {
     }
   }
 
+  // 路径信息数据
+  const pathItems: PathItem[] = [
+    {
+      icon: FileText,
+      label: t("dashboard.configFileLocation"),
+      value: "~/.nanobot/config.json",
+      description: t("about.configDesc"),
+    },
+    {
+      icon: Folder,
+      label: t("dashboard.workspaceLocation"),
+      value: "~/.nanobot/workspace",
+      description: t("about.workspaceDesc"),
+    },
+    {
+      icon: Database,
+      label: t("about.skillsLocation"),
+      value: "~/.nanobot/workspace/skills",
+      description: t("about.skillsDesc"),
+    },
+    {
+      icon: Database,
+      label: t("about.memoryLocation"),
+      value: "~/.nanobot/workspace/memory",
+      description: t("about.memoryDesc"),
+    },
+    {
+      icon: Clock,
+      label: t("about.cronJobsLocation"),
+      value: "~/.nanobot/cron",
+      description: t("about.cronDesc"),
+    },
+    {
+      icon: HardDrive,
+      label: t("dashboard.logLocation"),
+      value: "~/.nanobot/logs/nanobot.log",
+      description: t("about.logsDesc"),
+    },
+  ];
+
   return (
-    <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-white dark:bg-dark-bg-base transition-colors duration-200">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-bg-base dark:to-dark-bg-sidebar transition-colors duration-200">
+      <div className="max-w-5xl mx-auto space-y-6">
         {/* 应用信息卡片 */}
-        <div className="p-6 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">
-                  {APP_INFO.name}
-                </h2>
-                <span className="text-sm text-gray-500 dark:text-dark-text-muted">
-                  v{APP_INFO.version}
-                </span>
-                {updateStatus === "available" && latestVersion && (
+        <div className="relative overflow-hidden bg-white dark:bg-dark-bg-card rounded-2xl border border-gray-200 dark:border-dark-border-subtle shadow-lg">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl" />
+          <div className="relative p-8">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                    <img 
+                      src="/assets/logo.png" 
+                      alt={APP_INFO.name}
+                      className="w-10 h-10 object-contain"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        {APP_INFO.name}
+                      </h1>
+                      <span className="px-2.5 py-1 bg-gray-100 dark:bg-dark-bg-sidebar text-gray-600 dark:text-dark-text-muted text-xs font-medium rounded-full">
+                        v{APP_INFO.version}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-1">
+                      {i18n.language === "zh" ? APP_INFO.description : APP_INFO.descriptionEn}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {updateStatus === "available" && latestVersion && (
+                    <button
+                      onClick={() => openUrl(`${APP_INFO.github}/releases/latest`)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {t("about.newVersionAvailable")} (v{latestVersion})
+                    </button>
+                  )}
+                  {updateStatus === "latest" && (
+                    <span className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-lg">
+                      <CheckCircle className="w-4 h-4" />
+                      {t("about.latestVersion")}
+                    </span>
+                  )}
                   <button
-                    onClick={() => openUrl(`${APP_INFO.github}/releases/latest`)}
-                    className="flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium rounded-full hover:from-purple-600 hover:to-pink-600 transition-all cursor-pointer animate-pulse"
+                    onClick={() => openUrl(APP_INFO.github)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-dark-bg-sidebar hover:bg-gray-200 dark:hover:bg-dark-bg-hover text-gray-700 dark:text-dark-text-primary text-sm font-medium rounded-lg transition-colors"
                   >
-                    <Sparkles className="w-3 h-3" />
-                    {t("about.newVersionAvailable")} (v{latestVersion})
+                    <Github className="w-4 h-4" />
+                    GitHub
                   </button>
-                )}
-                {updateStatus === "latest" && (
-                  <span className="flex items-center gap-1.5 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-                    <CheckCircle className="w-3 h-3" />
-                    {t("about.latestVersion")}
-                  </span>
-                )}
-                <button
-                  onClick={() => openUrl(APP_INFO.github)}
-                  className="p-2 bg-gray-100 dark:bg-dark-bg-sidebar hover:bg-gray-200 dark:hover:bg-dark-bg-hover rounded-full transition-colors cursor-pointer"
-                  title="GitHub"
-                >
-                  <Github className="w-4 h-4 text-gray-600 dark:text-dark-text-secondary" />
-                </button>
+                </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-2">
-                {APP_INFO.description}｜{APP_INFO.descriptionEn}
-              </p>
             </div>
           </div>
         </div>
 
         {/* 系统信息卡片 */}
-        <div className="p-6 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
-              {t("about.systemInfo")}
-            </h2>
-            <div className="flex items-center gap-2">
-              {/* 安装按钮 - 仅在未检测到 nanobot 时显示 */}
-              {systemInfo && !systemInfo.nanobotVersion && (
-                <>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const result = await processApi.downloadWithUv();
-                        if (result.status === "success") {
-                          await processApi.onboard();
-                          loadSystemInfo();
-                        }
-                      } catch (error) {
-                        console.error("Installation failed:", error);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
-                  >
-                    <Download className="w-4 h-4" />
-                    {t("dashboard.downloadWithUv")}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const result = await processApi.download();
-                        if (result.status === "success") {
-                          await processApi.onboard();
-                          loadSystemInfo();
-                        }
-                      } catch (error) {
-                        console.error("Installation failed:", error);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                  >
-                    <Download className="w-4 h-4" />
-                    {t("dashboard.downloadWithPip")}
-                  </button>
-                </>
-              )}
-              <button
-                onClick={runDiagnosis}
-                disabled={diagnosing}
-                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-              >
-                <Stethoscope className="w-4 h-4" />
-                {diagnosing ? t("dashboard.diagnosing") : t("dashboard.diagnosis")}
-              </button>
-            </div>
-          </div>
-
-          {/* 诊断结果 */}
-          {showDiagnosis && diagnosisResult && (
-            <DiagnosticResultPanel
-              diagnosisResult={diagnosisResult}
-              onClose={() => setShowDiagnosis(false)}
-            />
-          )}
-
-          {systemInfo && (
-            <div className="space-y-3">
-              <InfoRow
-                icon={Monitor}
-                label={t("about.os")}
-                value={systemInfo.osVersion ? `${systemInfo.os} ${systemInfo.osVersion}` : systemInfo.os}
-              />
-              <InfoRow
-                icon={Cpu}
-                label={t("about.arch")}
-                value={systemInfo.arch}
-              />
-              <InfoRow
-                icon={Bot}
-                label={t("about.nanobotVersion")}
-                value={systemInfo.nanobotVersion || t("dashboard.notInstalled")}
-                status={systemInfo.nanobotVersion ? "ok" : "warning"}
-              />
-              <InfoRow
-                icon={FileText}
-                label={t("dashboard.nanobotLocation")}
-                value={systemInfo.nanobotPath || t("dashboard.notInstalled")}
-                status={systemInfo.nanobotPath ? "ok" : "warning"}
-                mono
-              />
-            </div>
-          )}
-
-          {/* 路径信息 */}
-          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-dark-border-subtle">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-muted mb-3">
-              {t("about.paths")}
-            </h3>
-            <div className="space-y-2">
-              {[
-                { label: t("dashboard.configFileLocation"), value: "~/.nanobot/config.json" },
-                { label: t("dashboard.workspaceLocation"), value: "~/.nanobot/workspace" },
-                { label: t("dashboard.logLocation"), value: "~/.nanobot/logs/nanobot.log" },
-                { label: t("about.cronJobsLocation"), value: "~/.nanobot/cron/jobs.json" },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg"
-                >
-                  <span className="text-sm text-gray-600 dark:text-dark-text-secondary">{item.label}</span>
-                  <code className="text-xs font-mono text-gray-500 dark:text-dark-text-muted">{item.value}</code>
+        <div className="bg-white dark:bg-dark-bg-card rounded-2xl border border-gray-200 dark:border-dark-border-subtle shadow-lg overflow-hidden">
+          <div className="p-6 border-b border-gray-200 dark:border-dark-border-subtle">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                  <Monitor className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 自定义路径配置 */}
-          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-dark-border-subtle">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-muted flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                {t("about.customPaths")}
-              </h3>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
+                  {t("about.systemInfo")}
+                </h2>
+              </div>
               <div className="flex items-center gap-2">
+                {systemInfo && !systemInfo.nanobotVersion && (
+                  <>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const result = await processApi.downloadWithUv();
+                          if (result.status === "success") {
+                            await processApi.onboard();
+                            loadSystemInfo();
+                          }
+                        } catch (error) {
+                          console.error("Installation failed:", error);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-md"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t("dashboard.downloadWithUv")}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const result = await processApi.download();
+                          if (result.status === "success") {
+                            await processApi.onboard();
+                            loadSystemInfo();
+                          }
+                        } catch (error) {
+                          console.error("Installation failed:", error);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors shadow-md"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t("dashboard.downloadWithPip")}
+                    </button>
+                  </>
+                )}
                 <button
-                  onClick={handleResetPaths}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-gray-900 dark:hover:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-bg-hover rounded-lg transition-colors"
+                  onClick={runDiagnosis}
+                  disabled={diagnosing}
+                  className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors shadow-md"
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  {t("about.autoDetect")}
-                </button>
-                <button
-                  onClick={handleSavePaths}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                    pathsSaved
-                      ? "bg-green-600 text-white"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  <Save className="w-4 h-4" />
-                  {pathsSaved ? t("about.saved") : t("about.savePaths")}
+                  <Stethoscope className="w-4 h-4" />
+                  {diagnosing ? t("dashboard.diagnosing") : t("dashboard.diagnosis")}
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 dark:text-dark-text-muted mb-4">
-              {t("about.customPathsDesc")}
-            </p>
-            <div className="space-y-4">
-              {/* Python 路径 */}
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-dark-text-secondary mb-1.5">
-                  {t("about.pythonPath")}
-                </label>
+          </div>
+
+          <div className="p-6">
+            {/* 诊断结果 */}
+            {showDiagnosis && diagnosisResult && (
+              <DiagnosticResultPanel
+                diagnosisResult={diagnosisResult}
+                onClose={() => setShowDiagnosis(false)}
+              />
+            )}
+
+            {/* 系统基本信息 */}
+            {systemInfo && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <InfoCard
+                  icon={Monitor}
+                  label={t("about.os")}
+                  value={systemInfo.osVersion ? `${systemInfo.os} ${systemInfo.osVersion}` : systemInfo.os}
+                  color="blue"
+                />
+                <InfoCard
+                  icon={Cpu}
+                  label={t("about.arch")}
+                  value={systemInfo.arch}
+                  color="purple"
+                />
+                <InfoCard
+                  icon={Bot}
+                  label={t("about.nanobotVersion")}
+                  value={systemInfo.nanobotVersion || t("dashboard.notInstalled")}
+                  status={systemInfo.nanobotVersion ? "ok" : "warning"}
+                  color="green"
+                />
+                <InfoCard
+                  icon={Terminal}
+                  label={t("about.pythonVersion")}
+                  value={systemInfo.pythonVersion || t("dashboard.notDetected")}
+                  status={systemInfo.pythonVersion ? "ok" : "warning"}
+                  color="amber"
+                />
+              </div>
+            )}
+
+            {/* 路径信息区域 */}
+            <div className="space-y-6">
+              {/* 路径信息标题栏 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+                    <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
+                      {t("about.paths")}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-dark-text-muted">
+                      {t("about.pathsDesc")}
+                    </p>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customPaths.pythonPath}
-                    onChange={(e) => setCustomPaths({ ...customPaths, pythonPath: e.target.value })}
-                    placeholder={systemInfo?.pythonPath || t("about.pythonPathPlaceholder")}
-                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted font-mono"
-                  />
-                  {systemInfo?.pythonPath && !customPaths.pythonPath && (
-                    <span className="text-xs text-gray-400 dark:text-dark-text-muted whitespace-nowrap">
-                      {t("about.detected")}: {systemInfo.pythonPath}
-                    </span>
+                  <button
+                    onClick={() => {
+                      handleResetPaths();
+                      setIsEditing(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-gray-900 dark:hover:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-bg-hover rounded-lg transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {t("about.autoDetect")}
+                  </button>
+                  {!isEditing ? (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-dark-bg-sidebar hover:bg-gray-200 dark:hover:bg-dark-bg-hover text-gray-700 dark:text-dark-text-primary text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      {t("about.editPaths")}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setCustomPaths({ pythonPath: "", nanobotPath: "" });
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-dark-text-secondary hover:text-gray-900 dark:hover:text-dark-text-primary text-sm font-medium rounded-lg transition-colors"
+                      >
+                        {t("about.cancel")}
+                      </button>
+                      <button
+                        onClick={handleSavePaths}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-md ${
+                          pathsSaved
+                            ? "bg-green-600 text-white"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }`}
+                      >
+                        <Save className="w-4 h-4" />
+                        {pathsSaved ? t("about.saved") : t("about.savePaths")}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
-              {/* Nanobot 路径 */}
-              <div>
-                <label className="block text-sm text-gray-600 dark:text-dark-text-secondary mb-1.5">
-                  {t("about.nanobotPath")}
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customPaths.nanobotPath}
-                    onChange={(e) => setCustomPaths({ ...customPaths, nanobotPath: e.target.value })}
-                    placeholder={systemInfo?.nanobotPath || t("about.nanobotPathPlaceholder")}
-                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-dark-bg-sidebar border border-gray-200 dark:border-dark-border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted font-mono"
-                  />
-                  {systemInfo?.nanobotPath && !customPaths.nanobotPath && (
-                    <span className="text-xs text-gray-400 dark:text-dark-text-muted whitespace-nowrap">
-                      {t("about.detected")}: {systemInfo.nanobotPath}
-                    </span>
-                  )}
-                </div>
+
+              {/* 固定路径列表 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {pathItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="group p-4 bg-gray-50 dark:bg-dark-bg-sidebar rounded-xl border border-gray-200 dark:border-dark-border-subtle hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-white dark:bg-dark-bg-card rounded-lg group-hover:scale-110 transition-transform">
+                        <item.icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 dark:text-dark-text-muted mb-1">
+                          {item.label}
+                        </p>
+                        <code className="text-sm font-mono text-gray-900 dark:text-dark-text-primary break-all">
+                          {item.value}
+                        </code>
+                        {item.description && (
+                          <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {/* 自定义路径配置 */}
+              {isEditing && (
+                <div className="mt-6 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-500/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Terminal className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <h4 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">
+                      {t("about.customPathsConfig")}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-indigo-700 dark:text-indigo-400 mb-4">
+                    {t("about.customPathsDesc")}
+                  </p>
+                  <div className="space-y-4">
+                    {/* Python 路径 */}
+                    <div>
+                      <label className="block text-sm font-medium text-indigo-900 dark:text-indigo-300 mb-2">
+                        {t("about.pythonPath")}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={customPaths.pythonPath}
+                          onChange={(e) => setCustomPaths({ ...customPaths, pythonPath: e.target.value })}
+                          placeholder={systemInfo?.pythonPath || t("about.pythonPathPlaceholder")}
+                          className="flex-1 px-4 py-2.5 bg-white dark:bg-dark-bg-card border border-indigo-200 dark:border-indigo-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted font-mono"
+                        />
+                        {systemInfo?.pythonPath && !customPaths.pythonPath && (
+                          <span className="text-xs text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                            {t("about.detected")}: {systemInfo.pythonPath}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Nanobot 路径 */}
+                    <div>
+                      <label className="block text-sm font-medium text-indigo-900 dark:text-indigo-300 mb-2">
+                        {t("about.nanobotPath")}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={customPaths.nanobotPath}
+                          onChange={(e) => setCustomPaths({ ...customPaths, nanobotPath: e.target.value })}
+                          placeholder={systemInfo?.nanobotPath || t("about.nanobotPathPlaceholder")}
+                          className="flex-1 px-4 py-2.5 bg-white dark:bg-dark-bg-card border border-indigo-200 dark:border-indigo-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm text-gray-900 dark:text-dark-text-primary placeholder-gray-400 dark:placeholder-dark-text-muted font-mono"
+                        />
+                        {systemInfo?.nanobotPath && !customPaths.nanobotPath && (
+                          <span className="text-xs text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                            {t("about.detected")}: {systemInfo.nanobotPath}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -446,43 +573,60 @@ export default function About() {
   );
 }
 
-function InfoRow({
+function InfoCard({
   icon: Icon,
   label,
   value,
   status = "ok",
-  mono = false,
+  color = "blue",
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   status?: "ok" | "warning" | "error";
-  mono?: boolean;
+  color?: "blue" | "purple" | "green" | "amber";
 }) {
-  const statusColors = {
-    ok: "text-green-600 dark:text-green-400",
-    warning: "text-amber-600 dark:text-amber-400",
-    error: "text-red-600 dark:text-red-400",
+  const colorClasses = {
+    blue: {
+      bg: "bg-blue-50 dark:bg-blue-900/30",
+      text: "text-blue-600 dark:text-blue-400",
+      border: "border-blue-200 dark:border-blue-500/30",
+    },
+    purple: {
+      bg: "bg-purple-50 dark:bg-purple-900/30",
+      text: "text-purple-600 dark:text-purple-400",
+      border: "border-purple-200 dark:border-purple-500/30",
+    },
+    green: {
+      bg: "bg-green-50 dark:bg-green-900/30",
+      text: "text-green-600 dark:text-green-400",
+      border: "border-green-200 dark:border-green-500/30",
+    },
+    amber: {
+      bg: "bg-amber-50 dark:bg-amber-900/30",
+      text: "text-amber-600 dark:text-amber-400",
+      border: "border-amber-200 dark:border-amber-500/30",
+    },
   };
 
-  const StatusIcon = {
+  const statusIcons = {
     ok: CheckCircle,
     warning: AlertCircle,
     error: XCircle,
-  }[status];
+  };
+
+  const StatusIcon = statusIcons[status];
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg">
-      <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-        <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+    <div className={`p-4 rounded-xl border ${colorClasses[color].bg} ${colorClasses[color].border} transition-all hover:shadow-md`}>
+      <div className="flex items-center justify-between mb-2">
+        <Icon className={`w-5 h-5 ${colorClasses[color].text}`} />
+        {status !== "ok" && <StatusIcon className={`w-4 h-4 ${colorClasses[color].text}`} />}
       </div>
-      <div className="flex-1">
-        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{label}</p>
-        <p className={`text-sm mt-0.5 ${mono ? "font-mono text-gray-500 dark:text-dark-text-muted" : "font-medium text-gray-900 dark:text-dark-text-primary"}`}>
-          {value}
-        </p>
-      </div>
-      <StatusIcon className={`w-5 h-5 ${statusColors[status]}`} />
+      <p className="text-xs text-gray-500 dark:text-dark-text-muted mb-1">{label}</p>
+      <p className={`text-sm font-medium ${value.includes("not") ? "text-gray-400 dark:text-dark-text-muted" : "text-gray-900 dark:text-dark-text-primary"}`}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -496,14 +640,12 @@ function DiagnosticResultPanel({
 }) {
   const { t } = useTranslation();
 
-  // 获取翻译后的检查项名称
   const getCheckName = (check: DiagnosticResult["checks"][0]) => {
     const nameKey = `dashboard.diagnosisChecks.${check.key}.name`;
     const translated = t(nameKey);
     return translated === nameKey ? check.name : translated;
   };
 
-  // 获取翻译后的消息
   const getCheckMessage = (check: DiagnosticResult["checks"][0]) => {
     const msgKey = `dashboard.diagnosisChecks.${check.key}.${check.message_key}`;
     const translated = t(msgKey, { version: check.details || "", path: check.details || "", deps: check.details || "" });
@@ -511,12 +653,16 @@ function DiagnosticResultPanel({
   };
 
   return (
-    <div className="mb-6 p-5 rounded-lg border bg-gray-50 dark:bg-dark-bg-sidebar border-gray-200 dark:border-dark-border-subtle">
-      <div className="flex items-center gap-2 mb-4">
+    <div className="mb-6 p-5 rounded-xl border bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-bg-sidebar dark:to-dark-bg-card border-gray-200 dark:border-dark-border-subtle">
+      <div className="flex items-center gap-3 mb-4">
         {diagnosisResult.overall === "passed" ? (
-          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+          </div>
         ) : (
-          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          </div>
         )}
         <h3 className="font-semibold text-gray-900 dark:text-dark-text-primary">
           {t("dashboard.diagnosisResult")}: {diagnosisResult.overall === "passed" ? t("dashboard.passed") : t("dashboard.issuesFound")}
@@ -524,7 +670,7 @@ function DiagnosticResultPanel({
       </div>
       <div className="space-y-3">
         {diagnosisResult.checks.map((check, idx) => (
-          <div key={idx} className="flex items-start gap-3 p-3 rounded bg-white dark:bg-dark-bg-card border border-gray-200 dark:border-dark-border-subtle">
+          <div key={idx} className="flex items-start gap-3 p-4 rounded-lg bg-white dark:bg-dark-bg-card border border-gray-200 dark:border-dark-border-subtle">
             <div className="mt-0.5">
               {check.status === "ok" && <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />}
               {check.status === "warning" && <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
@@ -533,7 +679,7 @@ function DiagnosticResultPanel({
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">{getCheckName(check)}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                <span className={`text-xs px-2 py-1 rounded-full ${
                   check.status === "ok" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
                   check.status === "warning" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
                   "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
@@ -541,9 +687,9 @@ function DiagnosticResultPanel({
                   {check.status === "ok" ? t("dashboard.normal") : check.status === "warning" ? t("dashboard.warning") : t("dashboard.error")}
                 </span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-dark-text-secondary mt-1">{getCheckMessage(check)}</p>
+              <p className="text-xs text-gray-600 dark:text-dark-text-secondary mt-2">{getCheckMessage(check)}</p>
               {check.details && (
-                <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-1 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-dark-bg-hover p-2 rounded">
+                <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-2 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-dark-bg-hover p-2 rounded">
                   {check.details}
                 </p>
               )}
@@ -553,7 +699,7 @@ function DiagnosticResultPanel({
       </div>
       <button
         onClick={onClose}
-        className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-gray-900 dark:hover:text-dark-text-primary transition-colors"
+        className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary hover:text-gray-900 dark:hover:text-dark-text-primary transition-colors font-medium"
       >
         {t("dashboard.closeDiagnosisResult")}
       </button>

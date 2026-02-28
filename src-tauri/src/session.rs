@@ -147,6 +147,14 @@ pub async fn list_sessions() -> Result<serde_json::Value, String> {
 /// 获取会话记忆内容
 #[tauri::command]
 pub async fn get_session_memory(session_id: String) -> Result<serde_json::Value, String> {
+    // 验证 session_id 格式
+    if let Err(e) = validate_identifier(&session_id) {
+        return Ok(json!({
+            "error": "invalid_id",
+            "message": e
+        }));
+    }
+    
     let workspace_path = get_workspace_path().map_err(|e| e.to_string())?;
     let memory_path = workspace_path.join("memory").join(&session_id);
 
@@ -223,6 +231,14 @@ pub async fn get_workspace_files() -> Result<serde_json::Value, String> {
 /// 删除会话
 #[tauri::command]
 pub async fn delete_session(session_id: String) -> Result<serde_json::Value, String> {
+    // 验证 session_id 格式
+    if let Err(e) = validate_identifier(&session_id) {
+        return Ok(json!({
+            "success": false,
+            "message": e
+        }));
+    }
+    
     let workspace_path = get_workspace_path().map_err(|e| e.to_string())?;
     let memory_path = workspace_path.join("memory").join(&session_id);
 
@@ -245,6 +261,22 @@ pub async fn delete_session(session_id: String) -> Result<serde_json::Value, Str
 /// 重命名会话
 #[tauri::command]
 pub async fn rename_session(session_id: String, new_name: String) -> Result<serde_json::Value, String> {
+    // 验证 session_id 格式
+    if let Err(e) = validate_identifier(&session_id) {
+        return Ok(json!({
+            "success": false,
+            "message": e
+        }));
+    }
+    
+    // 验证 new_name 格式（允许更宽松的字符，但不允许路径遍历）
+    if new_name.contains('/') || new_name.contains('\\') || new_name == ".." {
+        return Ok(json!({
+            "success": false,
+            "message": "无效的会话名称"
+        }));
+    }
+    
     let workspace_path = get_workspace_path().map_err(|e| e.to_string())?;
     let memory_path = workspace_path.join("memory");
     let old_path = memory_path.join(&session_id);
@@ -289,6 +321,14 @@ pub async fn rename_session(session_id: String, new_name: String) -> Result<serd
 /// 保存会话记忆内容
 #[tauri::command]
 pub async fn save_session_memory(session_id: String, content: String) -> Result<serde_json::Value, String> {
+    // 验证 session_id 格式
+    if let Err(e) = validate_identifier(&session_id) {
+        return Ok(json!({
+            "success": false,
+            "message": e
+        }));
+    }
+    
     let workspace_path = get_workspace_path().map_err(|e| e.to_string())?;
     let memory_path = workspace_path.join("memory");
 
@@ -1197,6 +1237,14 @@ pub async fn list_chat_sessions() -> Result<serde_json::Value, String> {
 /// 获取聊天会话内容并返回结构化消息数据
 #[tauri::command]
 pub async fn get_chat_session_content(session_id: String) -> Result<serde_json::Value, String> {
+    // 验证 session_id 格式（只允许 .jsonl 文件名）
+    if session_id.contains('/') || session_id.contains('\\') || session_id == ".." {
+        return Ok(json!({
+            "success": false,
+            "message": "无效的会话 ID 格式"
+        }));
+    }
+    
     let sessions_path = get_chat_sessions_path().map_err(|e| e.to_string())?;
     let session_path = sessions_path.join(&session_id);
 
