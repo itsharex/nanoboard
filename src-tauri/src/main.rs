@@ -140,6 +140,7 @@ async fn main() {
             clawhub::get_clawhub_skill_file,
             clawhub::install_clawhub_skill,
             clawhub::uninstall_clawhub_skill,
+            clawhub::get_installed_clawhub_skills,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -45,18 +45,30 @@ export default function SkillsMarket() {
   const [category, setCategory] = useState("");
   const [installingSlug, setInstallingSlug] = useState<string | null>(null);
   const [loadingSkillSlug, setLoadingSkillSlug] = useState<string | null>(null);
+  const [installedSkills, setInstalledSkills] = useState<Set<string>>(new Set());
+
+  const loadInstalledSkills = useCallback(async () => {
+    try {
+      const slugs = await clawhubApi.getInstalledSkills();
+      setInstalledSkills(new Set(slugs));
+    } catch (error) {
+      console.error("Failed to load installed skills:", error);
+    }
+  }, []);
 
   const loadSkills = useCallback(async () => {
     setLoading(true);
     try {
       const response = await clawhubApi.getSkills(sortBy, 30);
       setSkills(response.items || []);
+      // 加载已安装技能状态
+      await loadInstalledSkills();
     } catch {
       toast.showError(t("skills.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [sortBy, t, toast]);
+  }, [sortBy, t, toast, loadInstalledSkills]);
 
   useEffect(() => {
     if (!searchMode) loadSkills();
@@ -122,6 +134,8 @@ export default function SkillsMarket() {
       const result = await clawhubApi.installSkill(slug);
       if (result.success) {
         toast.showSuccess(result.message);
+        // 刷新已安装技能列表
+        await loadInstalledSkills();
       } else {
         toast.showError(result.message);
       }
@@ -130,7 +144,7 @@ export default function SkillsMarket() {
     } finally {
       setInstallingSlug(null);
     }
-  }, [t, toast]);
+  }, [t, toast, loadInstalledSkills]);
 
   const handleUninstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
@@ -139,6 +153,8 @@ export default function SkillsMarket() {
       const result = await clawhubApi.uninstallSkill(slug);
       if (result.success) {
         toast.showSuccess(result.message);
+        // 刷新已安装技能列表
+        await loadInstalledSkills();
       } else {
         toast.showError(result.message);
       }
@@ -147,7 +163,7 @@ export default function SkillsMarket() {
     } finally {
       setInstallingSlug(null);
     }
-  }, [t, toast]);
+  }, [t, toast, loadInstalledSkills]);
 
   // 使用 useMemo 缓存分类列表
   const categories = useMemo(() => 
@@ -229,7 +245,7 @@ export default function SkillsMarket() {
             searchResults.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchResults.map((skill) => (
-                  <SkillCard key={skill.slug} skill={skill} isInstalled={false} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
+                  <SkillCard key={skill.slug} skill={skill} isInstalled={installedSkills.has(skill.slug)} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
                     onUninstall={handleUninstall} onViewDetails={(s) => viewSkillDetail(s)} />
                 ))}
               </div>
@@ -239,7 +255,7 @@ export default function SkillsMarket() {
           ) : skills.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {skills.map((skill) => (
-                <SkillCard key={skill.slug} skill={skill} isInstalled={false} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
+                <SkillCard key={skill.slug} skill={skill} isInstalled={installedSkills.has(skill.slug)} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
                   onUninstall={handleUninstall} onViewDetails={(s) => viewSkillDetail(s)} />
               ))}
             </div>

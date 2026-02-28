@@ -248,9 +248,20 @@ pub async fn install_clawhub_skill(slug: String) -> Result<serde_json::Value, St
     let home = dirs::home_dir()
         .ok_or_else(|| "无法找到用户主目录".to_string())?;
 
-    // 构建命令
+    let nanobot_workspace = home.join(".nanobot").join("workspace");
+    let target_dir = nanobot_workspace.join("skills").join(&slug);
+    
+    // 首先检查是否已安装在 workspace，如果已存在则先删除
+    if target_dir.exists() {
+        if let Err(e) = fs::remove_dir_all(&target_dir) {
+            return Err(format!("删除旧技能目录失败：{}", e));
+        }
+    }
+
+    // 构建命令，使用 --force 参数强制重新安装
+    // 注意：ClawHub 默认安装到 ~/skills/ 或 ~/.clawhub/skills/
     let output = Command::new("npx")
-        .args(["clawhub@latest", "install", &slug])
+        .args(["clawhub@latest", "install", &slug, "--force"])
         .current_dir(&home)
         .output()
         .map_err(|e| format!("执行安装命令失败：{}. 请确保已安装 Node.js 和 npm。", e))?;
@@ -259,33 +270,44 @@ pub async fn install_clawhub_skill(slug: String) -> Result<serde_json::Value, St
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
     if output.status.success() {
-        // ClawHub 默认安装到 ~/skills/{slug}，需要移动到 ~/.nanobot/workspace/skills/{slug}
-        let source_dir = home.join("skills").join(&slug);
-        let nanobot_workspace = home.join(".nanobot").join("workspace");
-        let target_dir = nanobot_workspace.join("skills").join(&slug);
-
         // 确保目标目录存在
         if let Err(e) = fs::create_dir_all(&nanobot_workspace.join("skills")) {
             return Err(format!("创建目标目录失败：{}", e));
         }
 
-        // 如果目标已存在，先删除
-        if target_dir.exists() {
-            if let Err(e) = fs::remove_dir_all(&target_dir) {
-                return Err(format!("删除旧技能目录失败：{}", e));
+        // ClawHub 可能安装到多个位置，需要检查所有可能的位置
+        let possible_source_dirs = vec![
+            home.join("skills").join(&slug),
+            home.join(".clawhub").join("skills").join(&slug),
+            home.join(".local").join("skills").join(&slug),
+        ];
+
+        let mut moved = false;
+        for source_dir in &possible_source_dirs {
+            if source_dir.exists() {
+                // 如果目标已存在，先删除
+                if target_dir.exists() {
+                    if let Err(e) = fs::remove_dir_all(&target_dir) {
+                        return Err(format!("删除旧技能目录失败：{}", e));
+                    }
+                }
+
+                // 移动技能目录
+                if let Err(e) = fs::rename(source_dir, &target_dir) {
+                    // 如果 rename 失败（可能是跨文件系统），尝试复制
+                    if let Err(copy_e) = copy_dir_recursive(source_dir, &target_dir) {
+                        return Err(format!("移动技能目录失败：{}，复制也失败：{}", e, copy_e));
+                    }
+                    // 复制成功后删除源目录
+                    let _ = fs::remove_dir_all(source_dir);
+                }
+                moved = true;
+                break;
             }
         }
 
-        // 移动技能目录
-        if source_dir.exists() {
-            if let Err(e) = fs::rename(&source_dir, &target_dir) {
-                // 如果 rename 失败（可能是跨文件系统），尝试复制
-                if let Err(copy_e) = copy_dir_recursive(&source_dir, &target_dir) {
-                    return Err(format!("移动技能目录失败：{}，复制也失败：{}", e, copy_e));
-                }
-                // 复制成功后删除源目录
-                let _ = fs::remove_dir_all(&source_dir);
-            }
+        if !moved {
+            return Err(format!("技能已安装但找不到源目录，请手动检查 ~/skills/ 或 ~/.clawhub/skills/"));
         }
 
         Ok(serde_json::json!({
@@ -295,17 +317,7 @@ pub async fn install_clawhub_skill(slug: String) -> Result<serde_json::Value, St
             "slug": slug
         }))
     } else {
-        // 检查是否是因为 skill 已存在
-        if stdout.contains("already exists") || stderr.contains("already exists") {
-            Ok(serde_json::json!({
-                "success": true,
-                "message": format!("技能 {} 已安装", slug),
-                "output": stdout,
-                "slug": slug
-            }))
-        } else {
-            Err(format!("安装失败：{}{}", stdout, stderr))
-        }
+        Err(format!("安装失败：{}{}", stdout, stderr))
     }
 }
 
@@ -324,6 +336,38 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::
         }
     }
     Ok(())
+}
+
+/// 获取已安装的 ClawHub Skills
+#[command]
+pub async fn get_installed_clawhub_skills() -> Result<Vec<String>, String> {
+    use std::fs;
+
+    // 获取用户主目录
+    let home = dirs::home_dir()
+        .ok_or_else(|| "无法找到用户主目录".to_string())?;
+
+    let nanobot_workspace = home.join(".nanobot").join("workspace");
+    let skills_dir = nanobot_workspace.join("skills");
+
+    if !skills_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut installed = vec![];
+    if let Ok(entries) = fs::read_dir(&skills_dir) {
+        for entry in entries.flatten() {
+            if let Ok(file_type) = entry.file_type() {
+                if file_type.is_dir() {
+                    if let Some(name) = entry.file_name().to_str() {
+                        installed.push(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(installed)
 }
 
 /// 卸载 ClawHub Skill

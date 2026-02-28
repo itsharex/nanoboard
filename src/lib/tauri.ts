@@ -156,4 +156,6 @@ export const clawhubApi = {
     invoke<{ success: boolean; message: string; output: string; slug: string }>("install_clawhub_skill", { slug }),
   uninstallSkill: (slug: string) =>
     invoke<{ success: boolean; message: string; output: string; slug: string }>("uninstall_clawhub_skill", { slug }),
+  getInstalledSkills: () =>
+    invoke<string[]>("get_installed_clawhub_skills"),
 };
