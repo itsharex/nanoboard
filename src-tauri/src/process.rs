@@ -283,6 +283,65 @@ fn find_via_pip(package: &str) -> Option<String> {
     None
 }
 
+/// 查找 Python 可执行文件路径，优先使用自定义路径
+fn find_python_executable() -> Option<String> {
+    // 优先使用自定义 Python 路径
+    if let Some(custom) = get_custom_python_path_internal() {
+        if !custom.is_empty() && Path::new(&custom).exists() {
+            log::info!("使用自定义 Python 路径: {}", custom);
+            return Some(custom);
+        }
+    }
+
+    // 自动检测
+    #[cfg(windows)]
+    let python_commands = &["python", "python3", "py"];
+    #[cfg(not(windows))]
+    let python_commands = &["python3", "python"];
+
+    for cmd in python_commands {
+        if let Some(path) = find_via_which(cmd) {
+            log::debug!("通过 which 找到 Python: {}", path);
+            return Some(path);
+        }
+    }
+
+    None
+}
+
+/// 检查是否可以通过 Python 模块方式运行 nanobot
+fn can_run_nanobot_as_module(python_path: &str) -> bool {
+    let output = apply_hidden_window(Command::new(python_path))
+        .args(["-c", "import nanobot"])
+        .output();
+
+    match output {
+        Ok(result) => result.status.success(),
+        Err(_) => false,
+    }
+}
+
+/// 尝试获取 nanobot 命令或 Python 模块启动方式
+/// 返回 (命令路径, 是否是模块方式, 额外参数)
+pub(crate) fn find_nanobot_command() -> Option<(String, bool, Vec<String>)> {
+    // 方法 1: 直接查找 nanobot 命令
+    if let Some(path) = find_command("nanobot") {
+        log::info!("找到 nanobot 命令: {}", path);
+        return Some((path, false, vec![]));
+    }
+
+    // 方法 2: 使用 Python 模块方式启动
+    if let Some(python_path) = find_python_executable() {
+        if can_run_nanobot_as_module(&python_path) {
+            log::info!("将通过 Python 模块方式启动 nanobot: {}", python_path);
+            return Some((python_path, true, vec!["-m".to_string(), "nanobot".to_string()]));
+        }
+    }
+
+    log::warn!("未找到 nanobot 命令或可用的 Python 环境");
+    None
+}
+
 /// 查找命令的完整路径
 /// 使用多种方法查找命令，按优先级顺序：
 /// 1. 使用系统 which/where 命令（最可靠，会检查当前激活的环境）
@@ -427,22 +486,31 @@ pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Res
             .map_err(|e| format!("创建日志目录失败: {}", e))?;
     }
 
-    // 查找 nanobot 命令
-    let nanobot_cmd = match find_command("nanobot") {
-        Some(cmd) => cmd,
+    // 查找 nanobot 命令或 Python 模块启动方式
+    let (nanobot_cmd, is_module_mode, module_args) = match find_nanobot_command() {
+        Some((cmd, is_module, args)) => (cmd, is_module, args),
         None => {
             return Ok(json!({
                 "status": "failed",
-                "message": "未找到 nanobot 命令，请先安装 nanobot-ai"
+                "message": "未找到 nanobot 命令，请先安装 nanobot-ai 或配置正确的 Python 路径"
             }));
         }
     };
 
-    log::info!("找到 nanobot 命令: {}", nanobot_cmd);
+    log::info!("找到 nanobot: {}, 模块模式: {}", nanobot_cmd, is_module_mode);
+
+    // 构建测试命令参数
+    let test_args: Vec<String> = if is_module_mode {
+        let mut args = module_args.clone();
+        args.push("--help".to_string());
+        args
+    } else {
+        vec!["--help".to_string()]
+    };
 
     // 先用测试模式运行来捕获错误信息
     let test_output = apply_hidden_window(Command::new(&nanobot_cmd))
-        .args(["--help"])
+        .args(&test_args)
         .env("PYTHONUTF8", "1")
         .env("PYTHONIOENCODING", "utf-8")
         .output();
@@ -477,9 +545,20 @@ pub async fn start_nanobot(port: Option<u16>, state: State<'_, AppState>) -> Res
         .map(|m| m.len())
         .unwrap_or(0);
 
+    // 构建启动参数
+    let start_args: Vec<String> = if is_module_mode {
+        let mut args = module_args.clone();
+        args.push("gateway".to_string());
+        args.push("--port".to_string());
+        args.push(port.to_string());
+        args
+    } else {
+        vec!["gateway".to_string(), "--port".to_string(), port.to_string()]
+    };
+
     // 启动 nanobot gateway，直接将 stdout 和 stderr 都重定向到日志文件
     let mut child = match apply_hidden_window(Command::new(&nanobot_cmd))
-        .args(["gateway", "--port", &port.to_string()])
+        .args(&start_args)
         .env("PYTHONUTF8", "1")
         .env("PYTHONIOENCODING", "utf-8")
         .stdout(Stdio::from(log_file.try_clone().map_err(|e| format!("复制文件句柄失败: {}", e))?))

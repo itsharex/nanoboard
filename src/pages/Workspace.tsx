@@ -402,6 +402,20 @@ export default function Workspace() {
     } catch { toast.showError(t("workspace.cronToggleFailed")); }
   }
 
+  async function runCronJob(job: CronJob) {
+    try {
+      const result = await cronApi.run(job.id);
+      if (result.success) {
+        toast.showSuccess(t("cron.runSuccess"));
+        await loadCronJobs();
+      } else {
+        toast.showError(result.message || t("cron.runFailed"));
+      }
+    } catch {
+      toast.showError(t("cron.runFailed"));
+    }
+  }
+
   function openCronEditDialog(job: CronJob) {
     const formData = openEditCronDialog(job);
     setCronForm(formData as any);
@@ -500,7 +514,7 @@ export default function Workspace() {
                 formatTimestamp={(ts) => formatTimestamp(ts, t, i18n)} />
             )}
             {activeTab === "cron" && (
-              <CronList jobs={cronJobs} isLoading={isLoading} onToggle={toggleCronJobEnabled} onEdit={openCronEditDialog} onRemove={confirmRemoveCronJob}
+              <CronList jobs={cronJobs} isLoading={isLoading} onToggle={toggleCronJobEnabled} onEdit={openCronEditDialog} onRemove={confirmRemoveCronJob} onRun={runCronJob}
                 describeSchedule={(sch) => describeSchedule(sch, t)} describeCron={(expr) => describeCron(expr, t)} describeIntervalMs={(ms) => describeIntervalMs(ms, t)} formatCronTimestamp={formatCronTimestamp} formatCronRelativeTime={(ms) => formatCronRelativeTime(ms, t)} />
             )}
           </div>
