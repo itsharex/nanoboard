@@ -89,6 +89,8 @@ async fn main() {
             process::set_custom_paths,
             process::get_custom_paths,
             process::get_python_path,
+            process::get_node_path,
+            process::get_npm_path,
             // Logger commands
             logger::get_logs,
             logger::get_log_statistics,

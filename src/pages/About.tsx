@@ -21,13 +21,15 @@ import {
   Database,
   Clock,
   HardDrive,
+  Hexagon,
+  Package,
 } from "lucide-react";
 import type { DiagnosticResult } from "@/types";
 
 // 应用信息
 const APP_INFO = {
   name: "nanoboard",
-  version: "0.3.2",
+  version: "0.3.3",
   description: "一个极轻量化 nanobot Tauri 管理助手",
   descriptionEn: "An Ultra-lightweight nanobot Tauri Management Assistant",
   github: "https://github.com/Freakz3z/nanoboard",
@@ -42,6 +44,8 @@ interface SystemInfoData {
   nanobotVersion: string | null;
   nanobotPath: string | null;
   pythonPath: string | null;
+  nodePath: string | null;
+  npmPath: string | null;
 }
 
 type UpdateStatus = "checking" | "latest" | "available" | "error";
@@ -49,6 +53,8 @@ type UpdateStatus = "checking" | "latest" | "available" | "error";
 interface CustomPaths {
   pythonPath: string;
   nanobotPath: string;
+  nodePath: string;
+  npmPath: string;
 }
 
 interface PathItem {
@@ -68,7 +74,7 @@ function loadCustomPaths(): CustomPaths {
   } catch (error) {
     console.error("Failed to load custom paths:", error);
   }
-  return { pythonPath: "", nanobotPath: "" };
+  return { pythonPath: "", nanobotPath: "", nodePath: "", npmPath: "" };
 }
 
 // 保存自定义路径配置
@@ -96,11 +102,18 @@ export default function About() {
     checkForUpdates();
     // 应用启动时将 localStorage 中的自定义路径同步到后端，确保生效
     const saved = loadCustomPaths();
-    if (saved.pythonPath || saved.nanobotPath) {
+    const hasAnyPath = saved.pythonPath || saved.nanobotPath || saved.nodePath || saved.npmPath;
+    if (hasAnyPath) {
       processApi.setCustomPaths(
         saved.pythonPath || undefined,
-        saved.nanobotPath || undefined
-      ).catch(console.error);
+        saved.nanobotPath || undefined,
+        saved.nodePath || undefined,
+        saved.npmPath || undefined
+      ).then(() => {
+        console.log("[About] Custom paths synced to backend from localStorage");
+      }).catch((err) => {
+        console.error("[About] Failed to sync custom paths to backend:", err);
+      });
     }
   }, []);
 
@@ -109,7 +122,9 @@ export default function About() {
     try {
       await processApi.setCustomPaths(
         customPaths.pythonPath || undefined,
-        customPaths.nanobotPath || undefined
+        customPaths.nanobotPath || undefined,
+        customPaths.nodePath || undefined,
+        customPaths.npmPath || undefined
       );
       saveCustomPaths(customPaths);
       setPathsSaved(true);
@@ -123,8 +138,8 @@ export default function About() {
   // 重置为自动检测
   async function handleResetPaths() {
     try {
-      await processApi.setCustomPaths(undefined, undefined);
-      const resetPaths = { pythonPath: "", nanobotPath: "" };
+      await processApi.setCustomPaths(undefined, undefined, undefined, undefined);
+      const resetPaths = { pythonPath: "", nanobotPath: "", nodePath: "", npmPath: "" };
       setCustomPaths(resetPaths);
       saveCustomPaths(resetPaths);
       await loadSystemInfo();
@@ -133,7 +148,7 @@ export default function About() {
     }
   }
 
-  const hasCustomPaths = !!(customPaths.pythonPath || customPaths.nanobotPath);
+  const hasCustomPaths = !!(customPaths.pythonPath || customPaths.nanobotPath || customPaths.nodePath || customPaths.npmPath);
 
   async function checkForUpdates() {
     try {
@@ -165,11 +180,13 @@ export default function About() {
 
   async function loadSystemInfo() {
     try {
-      const [sysInfo, versionInfo, pathInfo, pythonPathInfo, customPathsInfo] = await Promise.all([
+      const [sysInfo, versionInfo, pathInfo, pythonPathInfo, nodePathInfo, npmPathInfo, customPathsInfo] = await Promise.all([
         processApi.getSystemInfo(),
         processApi.getVersion().catch(() => null),
         processApi.getNanobotPath().catch(() => null),
         processApi.getPythonPath().catch(() => null),
+        processApi.getNodePath().catch(() => null),
+        processApi.getNpmPath().catch(() => null),
         processApi.getCustomPaths().catch(() => null),
       ]);
 
@@ -181,13 +198,27 @@ export default function About() {
         nanobotVersion: versionInfo?.version || null,
         nanobotPath: pathInfo?.path || null,
         pythonPath: pythonPathInfo?.path || null,
+        nodePath: nodePathInfo?.path || null,
+        npmPath: npmPathInfo?.path || null,
       });
 
+      // 只有当后端返回有效的自定义路径时才更新前端状态
+      // 否则保留 localStorage 中的值（因为后端静态变量会在应用重启后丢失）
       if (customPathsInfo) {
-        setCustomPaths({
-          pythonPath: customPathsInfo.pythonPath || "",
-          nanobotPath: customPathsInfo.nanobotPath || "",
-        });
+        const hasValidBackendPaths = customPathsInfo.pythonPath ||
+                                     customPathsInfo.nanobotPath ||
+                                     customPathsInfo.nodePath ||
+                                     customPathsInfo.npmPath;
+
+        if (hasValidBackendPaths) {
+          setCustomPaths({
+            pythonPath: customPathsInfo.pythonPath || "",
+            nanobotPath: customPathsInfo.nanobotPath || "",
+            nodePath: customPathsInfo.nodePath || "",
+            npmPath: customPathsInfo.npmPath || "",
+          });
+        }
+        // 如果后端没有有效路径，保留当前状态（可能是用户正在输入但还没保存，或者从 localStorage 加载的）
       }
     } catch (error) {
       console.error("Failed to load system info:", error);
@@ -576,6 +607,84 @@ export default function About() {
                         <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-dark-text-muted">
                           <CheckCircle className="w-3 h-3 text-green-500" />
                           {t("about.detected")}: <code className="font-mono ml-0.5">{systemInfo.nanobotPath}</code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Node 路径 */}
+                  <div>
+                    <label className={`flex items-center gap-1.5 text-sm font-semibold mb-2 ${
+                      hasCustomPaths && customPaths.nodePath ? "text-indigo-800 dark:text-indigo-300" : "text-gray-600 dark:text-dark-text-secondary"
+                    }`}>
+                      <Hexagon className="w-3.5 h-3.5" />
+                      {t("about.nodePath", "Node 路径")}
+                      {customPaths.nodePath && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded font-medium">
+                          {t("about.custom", "自定义")}
+                        </span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={customPaths.nodePath}
+                        onChange={(e) => setCustomPaths({ ...customPaths, nodePath: e.target.value })}
+                        placeholder={systemInfo?.nodePath || t("about.nodePathPlaceholder", "/usr/local/bin/node")}
+                        className={`w-full px-4 py-3 rounded-xl border text-sm font-mono transition-all focus:outline-none focus:ring-2 ${
+                          customPaths.nodePath
+                            ? "bg-white dark:bg-dark-bg-card border-indigo-300 dark:border-indigo-500/50 text-gray-900 dark:text-dark-text-primary focus:ring-indigo-500 shadow-sm"
+                            : "bg-white dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle text-gray-900 dark:text-dark-text-primary focus:ring-blue-500 placeholder-gray-400 dark:placeholder-dark-text-muted"
+                        }`}
+                      />
+                      {systemInfo?.nodePath && !customPaths.nodePath && (
+                        <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-dark-text-muted">
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                          {t("about.detected")}: <code className="font-mono ml-0.5">{systemInfo.nodePath}</code>
+                        </div>
+                      )}
+                      {!systemInfo?.nodePath && !customPaths.nodePath && (
+                        <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-dark-text-muted">
+                          <span className="text-gray-400">{t("about.nodePathDesc", "用于 Skills 市场的安装，如: /Users/xxx/.nvm/versions/node/v24.13.0/bin/node")}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* NPM 路径 */}
+                  <div>
+                    <label className={`flex items-center gap-1.5 text-sm font-semibold mb-2 ${
+                      hasCustomPaths && customPaths.npmPath ? "text-indigo-800 dark:text-indigo-300" : "text-gray-600 dark:text-dark-text-secondary"
+                    }`}>
+                      <Package className="w-3.5 h-3.5" />
+                      {t("about.npmPath", "NPM 路径")}
+                      {customPaths.npmPath && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded font-medium">
+                          {t("about.custom", "自定义")}
+                        </span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={customPaths.npmPath}
+                        onChange={(e) => setCustomPaths({ ...customPaths, npmPath: e.target.value })}
+                        placeholder={systemInfo?.npmPath || t("about.npmPathPlaceholder", "/usr/local/bin/npm")}
+                        className={`w-full px-4 py-3 rounded-xl border text-sm font-mono transition-all focus:outline-none focus:ring-2 ${
+                          customPaths.npmPath
+                            ? "bg-white dark:bg-dark-bg-card border-indigo-300 dark:border-indigo-500/50 text-gray-900 dark:text-dark-text-primary focus:ring-indigo-500 shadow-sm"
+                            : "bg-white dark:bg-dark-bg-card border-gray-200 dark:border-dark-border-subtle text-gray-900 dark:text-dark-text-primary focus:ring-blue-500 placeholder-gray-400 dark:placeholder-dark-text-muted"
+                        }`}
+                      />
+                      {systemInfo?.npmPath && !customPaths.npmPath && (
+                        <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-dark-text-muted">
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                          {t("about.detected")}: <code className="font-mono ml-0.5">{systemInfo.npmPath}</code>
+                        </div>
+                      )}
+                      {!systemInfo?.npmPath && !customPaths.npmPath && (
+                        <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-dark-text-muted">
+                          <span className="text-gray-400">{t("about.npmPathDesc", "可选，通常与 Node 在同一目录，如: /Users/xxx/.nvm/versions/node/v24.13.0/bin/npm")}</span>
                         </div>
                       )}
                     </div>

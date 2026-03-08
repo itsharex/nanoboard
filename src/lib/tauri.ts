@@ -54,10 +54,12 @@ export const processApi = {
   checkOAuthToken: (provider: string) => invoke<{ has_token: boolean; is_expired?: boolean; message: string }>("check_oauth_token", { provider }),
   checkConfig: () => invoke<ConfigCheckResult>("check_nanobot_config"),
   diagnose: () => invoke<DiagnosticResult>("diagnose_nanobot"),
-  setCustomPaths: (pythonPath?: string, nanobotPath?: string) =>
-    invoke<OperationResult>("set_custom_paths", { pythonPath, nanobotPath }),
-  getCustomPaths: () => invoke<{ pythonPath: string | null; nanobotPath: string | null }>("get_custom_paths"),
+  setCustomPaths: (pythonPath?: string, nanobotPath?: string, nodePath?: string, npmPath?: string) =>
+    invoke<OperationResult>("set_custom_paths", { pythonPath, nanobotPath, nodePath, npmPath }),
+  getCustomPaths: () => invoke<{ pythonPath: string | null; nanobotPath: string | null; nodePath: string | null; npmPath: string | null }>("get_custom_paths"),
   getPythonPath: () => invoke<{ path: string | null; found: boolean; source: string }>("get_python_path"),
+  getNodePath: () => invoke<{ path: string | null; found: boolean; source: string }>("get_node_path"),
+  getNpmPath: () => invoke<{ path: string | null; found: boolean; source: string }>("get_npm_path"),
 };
 
 // Logger API
