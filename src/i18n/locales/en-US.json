@@ -14,7 +14,7 @@
     "about": "About"
   },
   "layout": {
-    "logoAlt": "Nanoboard Logo",
+    "logoAlt": "nanoboard Logo",
     "start": "Start",
     "stop": "Stop",
     "restart": "Restart",
@@ -135,7 +135,7 @@
         "execFailed": "nanobot command exists but failed to execute",
         "cannotExec": "nanobot command exists but cannot be executed",
         "notInstalled": "nanobot-ai not installed",
-        "notInstalledDetails": "Run: pip install nanobot-ai\nOr click the download button in Nanoboard"
+        "notInstalledDetails": "Run: pip install nanobot-ai\nOr click the download button in nanoboard"
       },
       "nanobotUsable": {
         "name": "nanobot Usability",
@@ -151,7 +151,7 @@
         "name": "Config File",
         "homeNotFound": "Cannot find user home directory",
         "notExist": "Config file does not exist",
-        "notExistDetails": "Run: nanobot onboard\nOr click the initialize button in Nanoboard",
+        "notExistDetails": "Run: nanobot onboard\nOr click the initialize button in nanoboard",
         "cannotRead": "Cannot read config file",
         "valid": "Config file exists and is valid",
         "invalidFormat": "Config file format is invalid"

@@ -11,7 +11,7 @@
 ### ✅ 推荐解决方案（最简单）
 
 **右键点击应用**：
-1. 在 Finder 中右键点击 `Nanoboard.app`
+1. 在 Finder 中右键点击 `nanoboard.app`
 2. 选择"打开"
 3. 在弹出对话框中点击"打开"
 
@@ -23,10 +23,10 @@
 
 ```bash
 # 移除隔离标志
-xattr -cr com.apple.quarantine /Applications/Nanoboard.app
+xattr -cr com.apple.quarantine /Applications/nanoboard.app
 
 # 移除来源元数据
-xattr -cr com.apple.metadata:kMDItemWhereFroms /Applications/Nanoboard.app
+xattr -cr com.apple.metadata:kMDItemWhereFroms /Applications/nanoboard.app
 ```
 
 ### 📦 项目配置说明
@@ -52,7 +52,7 @@ xattr -cr com.apple.metadata:kMDItemWhereFroms /Applications/Nanoboard.app
    ```bash
    codesign --deep --force --verify --verbose \
      --sign "Developer ID Application: Your Name (YOUR_ID)" \
-     build/macos/Nanoboard.app
+     build/macos/nanoboard.app
    ```
 
 2. **公证应用**：
@@ -61,12 +61,12 @@ xattr -cr com.apple.metadata:kMDItemWhereFroms /Applications/Nanoboard.app
      --apple-id "YOUR_APPLE_ID" \
      --password "@keychain:altool" \
      --wait \
-     build/Nanoboard.app.dmg
+     build/nanoboard.app.dmg
    ```
 
 3. **创建签名的 DMG**：
    ```bash
-   hdiutil create -volname "Nanoboard" \
+   hdiutil create -volname "nanoboard" \
      -srcfolder build/macos \
      -ov -format UDZO
    ```

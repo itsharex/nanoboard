@@ -36,7 +36,22 @@ async fn main() {
         .manage(std::sync::Mutex::new(network::NetworkMonitor::new()))
         .manage(theme::ThemeState::new())
         .setup(|app| {
-            // 设置窗口图标
+            // 设置窗口图标 (Windows 使用 ICO 格式)
+            #[cfg(target_os = "windows")]
+            if let Some(window) = app.get_webview_window("main") {
+                let icon_bytes = include_bytes!("../icons/icon.ico");
+                match tauri::image::Image::from_bytes(icon_bytes) {
+                    Ok(icon) => {
+                        let _ = window.set_icon(icon);
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to load window icon: {:?}", e);
+                    }
+                }
+            }
+
+            // macOS/Linux 使用 PNG 格式
+            #[cfg(not(target_os = "windows"))]
             if let Some(window) = app.get_webview_window("main") {
                 let icon_bytes = include_bytes!("../icons/32x32.png");
                 let icon = tauri::image::Image::new(icon_bytes, 32, 32);

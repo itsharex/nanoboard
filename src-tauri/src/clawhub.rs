@@ -166,7 +166,7 @@ pub async fn search_clawhub_skills(
     let response = client
         .get(&url)
         .header("Accept", "application/json")
-        .header("User-Agent", "Nanoboard/1.0")
+        .header("User-Agent", "nanoboard/1.0")
         .send()
         .await
         .map_err(|e| format!("请求失败：{}", e))?;
@@ -205,7 +205,7 @@ pub async fn get_clawhub_skills(
     let response = client
         .get(&url)
         .header("Accept", "application/json")
-        .header("User-Agent", "Nanoboard/1.0")
+        .header("User-Agent", "nanoboard/1.0")
         .send()
         .await
         .map_err(|e| format!("请求失败：{}", e))?;
@@ -231,7 +231,7 @@ pub async fn get_clawhub_skill_detail(slug: String) -> Result<SkillDetailRespons
     let response = client
         .get(&url)
         .header("Accept", "application/json")
-        .header("User-Agent", "Nanoboard/1.0")
+        .header("User-Agent", "nanoboard/1.0")
         .send()
         .await
         .map_err(|e| format!("请求失败：{}", e))?;
@@ -270,7 +270,7 @@ pub async fn get_clawhub_skill_file(
     let response = client
         .get(&url)
         .header("Accept", "text/plain")
-        .header("User-Agent", "Nanoboard/1.0")
+        .header("User-Agent", "nanoboard/1.0")
         .send()
         .await
         .map_err(|e| format!("请求失败：{}", e))?;

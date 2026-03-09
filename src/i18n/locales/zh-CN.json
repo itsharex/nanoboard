@@ -22,7 +22,7 @@
     "about": "关于"
   },
   "layout": {
-    "logoAlt": "Nanoboard Logo",
+    "logoAlt": "nanoboard Logo",
     "start": "启动",
     "stop": "停止",
     "restart": "重启",
@@ -143,7 +143,7 @@
         "execFailed": "nanobot 命令存在但执行失败",
         "cannotExec": "nanobot 命令存在但无法执行",
         "notInstalled": "未安装 nanobot-ai",
-        "notInstalledDetails": "请运行: pip install nanobot-ai\n或在 Nanoboard 中点击下载按钮"
+        "notInstalledDetails": "请运行: pip install nanobot-ai\n或在 nanoboard 中点击下载按钮"
       },
       "nanobotUsable": {
         "name": "nanobot 可用性",
@@ -159,7 +159,7 @@
         "name": "配置文件",
         "homeNotFound": "无法找到用户主目录",
         "notExist": "配置文件不存在",
-        "notExistDetails": "请运行: nanobot onboard\n或在 Nanoboard 中点击初始化按钮",
+        "notExistDetails": "请运行: nanobot onboard\n或在 nanoboard 中点击初始化按钮",
         "cannotRead": "无法读取配置文件",
         "valid": "配置文件存在且有效",
         "invalidFormat": "配置文件格式无效"

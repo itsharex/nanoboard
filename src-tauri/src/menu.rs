@@ -55,7 +55,7 @@ pub fn build_menu(app: &AppHandle) -> Menu<Wry> {
     let docs = MenuItem::with_id(app, "open_docs", "Documentation 文档", true, None::<&str>).unwrap();
     let issue = MenuItem::with_id(app, "report_issue", "Report Issue 报告问题", true, None::<&str>).unwrap();
     let separator3 = PredefinedMenuItem::separator(app).unwrap();
-    let about = MenuItem::with_id(app, "about", "About Nanoboard 关于", true, None::<&str>).unwrap();
+    let about = MenuItem::with_id(app, "about", "About nanoboard 关于", true, None::<&str>).unwrap();
     let help_menu = Submenu::with_items(app, "Help 帮助", true, &[&docs, &issue, &separator3, &about]).unwrap();
 
     Menu::with_items(app, &[&file_menu, &edit_menu, &view_menu, &tools_menu, &help_menu]).unwrap()
@@ -93,7 +93,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let tray_result = TrayIconBuilder::new()
         .menu(&tray_menu)
-        .tooltip("Nanoboard")
+        .tooltip("nanoboard")
         .icon(icon)
         .build(app);
 

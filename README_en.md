@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/assets/logo_nanoboard.png" alt="Nanoboard Logo">
+<img src="public/assets/logo_nanoboard.png" alt="nanoboard Logo">
 
 # Ultra-lightweight nanobot Management Assistant
 
@@ -77,19 +77,6 @@ Download the latest installation package from the [Release](https://github.com/F
 | Linux x64       | x64   | deb + AppImage |
 | Linux aarch64   | ARM64 | deb + AppImage |
 
-## Tech Stack
-
-- **Backend**: Rust + Tauri 2.0
-- **Frontend**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **UI Framework**: TailwindCSS
-- **Icons**: Lucide React
-- **Editor**: Monaco Editor
-- **State Management**: React Hooks + Context API
-- **Routing**: React Router v6
-- **Internationalization**: react-i18next
-- **File Monitoring**: notify (Rust)
-
 ## Configuration
 
 nanoboard automatically reads the following nanobot configurations:
@@ -164,6 +151,19 @@ nanoboard/
 └── README.md              # Project documentation
 ```
 
+## Tech Stack
+
+- **Backend**: Rust + Tauri 2.0
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **UI Framework**: TailwindCSS
+- **Icons**: Lucide React
+- **Editor**: Monaco Editor
+- **State Management**: React Hooks + Context API
+- **Routing**: React Router v6
+- **Internationalization**: react-i18next
+- **File Monitoring**: notify (Rust)
+
 ## Roadmap
 
 - [x] Basic dashboard features
@@ -180,7 +180,6 @@ nanoboard/
 - [x] Memory management (view/edit/delete)
 - [x] Cron jobs management
 - [x] ClawHub Skills Market (with installed status indicator, one-click install/uninstall)
-- [ ] Auto-update feature
 
 ## Acknowledgments
 

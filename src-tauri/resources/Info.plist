@@ -9,7 +9,7 @@
 	<key>CFBundleVersion</key>
 	<string>0.1.5</string>
 	<key>CFBundleName</key>
-	<string>Nanoboard</string>
+	<string>nanoboard</string>
 	<key>CFBundleExecutable</key>
 	<string>nanoboard</string>
 	<key>CFBundleInfoDictionaryVersion</key>

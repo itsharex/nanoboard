@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/assets/logo_nanoboard.png" alt="Nanoboard Logo">
+<img src="public/assets/logo_nanoboard.png" alt="nanoboard Logo">
 
 # 极轻量化的 nanobot 管理助手
 
@@ -77,19 +77,6 @@
 | Linux x64       | x64   | deb + AppImage |
 | Linux aarch64   | ARM64 | deb + AppImage |
 
-## 技术栈
-
-- **后端**: Rust + Tauri 2.0
-- **前端**: React 18 + TypeScript
-- **构建工具**: Vite
-- **UI 框架**: TailwindCSS
-- **图标**: Lucide React
-- **编辑器**: Monaco Editor
-- **状态管理**: React Hooks + Context API
-- **路由**: React Router v6
-- **国际化**: react-i18next
-- **文件监控**: notify (Rust)
-
 ## 配置
 
 nanoboard 会自动读取以下 nanobot 配置：
@@ -164,6 +151,19 @@ nanoboard/
 └── README.md              # 项目文档
 ```
 
+## 技术栈
+
+- **后端**: Rust + Tauri 2.0
+- **前端**: React 18 + TypeScript
+- **构建工具**: Vite
+- **UI 框架**: TailwindCSS
+- **图标**: Lucide React
+- **编辑器**: Monaco Editor
+- **状态管理**: React Hooks + Context API
+- **路由**: React Router v6
+- **国际化**: react-i18next
+- **文件监控**: notify (Rust)
+
 ## 开发路线图
 
 - [x] 基础仪表盘功能
@@ -180,7 +180,6 @@ nanoboard/
 - [x] 记忆管理（查看/编辑/删除）
 - [x] 定时任务管理
 - [x] ClawHub 技能市场（支持已安装状态显示、一键安装/卸载）
-- [ ] 自动更新功能
 
 ## 致谢
 
