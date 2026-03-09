@@ -25,15 +25,16 @@ import {
   Package,
 } from "lucide-react";
 import type { DiagnosticResult } from "@/types";
+// 从 package.json 导入应用信息
+import pkg from "../../package.json";
 
 // 应用信息
 const APP_INFO = {
-  name: "nanoboard",
-  version: "0.3.3",
-  description: "一个极轻量化 nanobot Tauri 管理助手",
-  descriptionEn: "An Ultra-lightweight nanobot Tauri Management Assistant",
-  github: "https://github.com/Freakz3z/nanoboard",
-  releasesApi: "https://api.github.com/repos/Freakz3z/nanoboard/releases/latest",
+  name: pkg.name,
+  version: pkg.version,
+  description: pkg.description,
+  github: pkg.repository?.url?.replace(/\.git$/, "") || "https://github.com/Freakz3z/nanoboard",
+  releasesApi: `https://api.github.com/repos/${pkg.repository?.url?.match(/github\.com\/(.+?)\.git$/)?.[1] || "Freakz3z/nanoboard"}/releases/latest`,
 };
 
 interface SystemInfoData {
@@ -87,7 +88,7 @@ function saveCustomPaths(paths: CustomPaths) {
 }
 
 export default function About() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfoData | null>(null);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnosisResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
@@ -318,7 +319,7 @@ export default function About() {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-1">
-                      {i18n.language === "zh" ? APP_INFO.description : APP_INFO.descriptionEn}
+                      {APP_INFO.description}
                     </p>
                   </div>
                 </div>
