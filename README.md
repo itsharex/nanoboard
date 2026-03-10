@@ -34,19 +34,7 @@
 | Linux x64       | x64   | deb + AppImage |
 | Linux aarch64   | ARM64 | deb + AppImage |
 
-## 配置
-
-nanoboard 会自动读取以下 nanobot 配置：
-
-- **配置文件**: `~/.nanobot/config.json`
-- **日志文件**: `~/.nanobot/logs/nanobot.log`
-- **工作区**: `~/.nanobot/workspace`
-- **会话目录**: `~/.nanobot/sessions`
-- **技能目录**: `~/.nanobot/workspace/skills`
-- **记忆目录**: `~/.nanobot/workspace/memory`
-- **定时任务目录**: `~/.nanobot/cron`
-
-## 构建
+## 开发构建
 
 ### 环境要求
 

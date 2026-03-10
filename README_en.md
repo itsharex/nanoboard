@@ -34,19 +34,7 @@ Download the latest installation package from the [Release](https://github.com/F
 | Linux x64       | x64   | deb + AppImage |
 | Linux aarch64   | ARM64 | deb + AppImage |
 
-## Configuration
-
-nanoboard automatically reads the following nanobot configurations:
-
-- **Config File**: `~/.nanobot/config.json`
-- **Log File**: `~/.nanobot/logs/nanobot.log`
-- **Workspace**: `~/.nanobot/workspace`
-- **Sessions Directory**: `~/.nanobot/sessions`
-- **Skills Directory**: `~/.nanobot/workspace/skills`
-- **Memory Directory**: `~/.nanobot/workspace/memory`
-- **Cron Directory**: `~/.nanobot/cron`
-
-## Build
+## Development Build
 
 ### Requirements
 
