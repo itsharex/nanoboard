@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ExternalLink, RefreshCw, X } from "lucide-react";
 import { clawhubApi } from "@/lib/tauri";
 import { useToast } from "@/contexts/ToastContext";
 import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/common/LoadingState";
 import { SkillCard } from "@/components/skills";
 import type { ClawHubSearchResult, SkillListItem, SkillDetailResponse, SkillSortOption } from "@/types/clawhub";
 import { SKILL_SORT_OPTIONS as sortOptions } from "@/types/clawhub";
+
+const SKILLS_PAGE_SIZE = 30;
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -14,38 +17,35 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-function formatTime(timestamp: number): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return "今天";
-  if (days === 1) return "昨天";
-  if (days < 7) return `${days} 天前`;
-  if (days < 30) return `${Math.floor(days / 7)} 周前`;
-  if (days < 365) return `${Math.floor(days / 30)} 月前`;
-  return `${Math.floor(days / 365)} 年前`;
-}
-
 export default memo(function SkillsMarket() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { showError, showSuccess } = toast;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ClawHubSearchResult[]>([]);
   const [skills, setSkills] = useState<SkillListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   const [sortBy, setSortBy] = useState<SkillSortOption>("trending");
   const [selectedSkill, setSelectedSkill] = useState<SkillDetailResponse | null>(null);
   const [skillFileContent, setSkillFileContent] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [loadingFile, setLoadingFile] = useState(false);
-  const [showInstalled, setShowInstalled] = useState(false);
-  const [category, setCategory] = useState("");
   const [installingSlug, setInstallingSlug] = useState<string | null>(null);
   const [loadingSkillSlug, setLoadingSkillSlug] = useState<string | null>(null);
   const [installedSkills, setInstalledSkills] = useState<Set<string>>(new Set());
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [requestedLimit, setRequestedLimit] = useState(SKILLS_PAGE_SIZE);
+  const [hasMoreSkills, setHasMoreSkills] = useState(true);
+
+  const skillsCountRef = useRef(0);
+  const failedAutoLoadCursorRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    skillsCountRef.current = skills.length;
+  }, [skills.length]);
 
   const loadInstalledSkills = useCallback(async () => {
     try {
@@ -63,32 +63,120 @@ export default memo(function SkillsMarket() {
     }
   }, []);
 
-  const loadSkills = useCallback(async () => {
-    setLoading(true);
+  const mergeSkills = useCallback((previous: SkillListItem[], incoming: SkillListItem[]) => {
+    if (previous.length === 0) {
+      return incoming;
+    }
+
+    const nextItems = [...previous];
+    const existingSlugs = new Set(previous.map((skill) => skill.slug));
+
+    for (const skill of incoming) {
+      if (!existingSlugs.has(skill.slug)) {
+        nextItems.push(skill);
+        existingSlugs.add(skill.slug);
+      }
+    }
+
+    return nextItems;
+  }, []);
+
+  const loadSkills = useCallback(async ({
+    append = false,
+    cursor = null,
+    limit = SKILLS_PAGE_SIZE,
+    incremental = false,
+  }: {
+    append?: boolean;
+    cursor?: string | null;
+    limit?: number;
+    incremental?: boolean;
+  } = {}) => {
+    if (append && !cursor) {
+      return;
+    }
+
+    if (append || incremental) {
+      setLoadingMore(true);
+    } else {
+      failedAutoLoadCursorRef.current = null;
+      setLoading(true);
+    }
+
     try {
-      const response = await clawhubApi.getSkills(sortBy, 30);
-      setSkills(response.items || []);
+      const response = await clawhubApi.getSkills(sortBy, limit, append ? cursor ?? undefined : undefined);
+      const incomingItems = response.items || [];
+      const previousCount = skillsCountRef.current;
+
+      setSkills((previous) => ((append || incremental) ? mergeSkills(previous, incomingItems) : incomingItems));
+      setNextCursor(response.nextCursor || null);
+      setRequestedLimit(limit);
+      if (response.nextCursor) {
+        setHasMoreSkills(true);
+      } else if (append) {
+        setHasMoreSkills(incomingItems.length > 0);
+      } else if (incremental || limit > previousCount) {
+        setHasMoreSkills(incomingItems.length > previousCount);
+      } else {
+        setHasMoreSkills(true);
+      }
+      failedAutoLoadCursorRef.current = null;
+
       // 加载已安装技能状态
       await loadInstalledSkills();
     } catch {
-      toast.showError(t("skills.loadFailed"));
+      if (append || incremental) {
+        failedAutoLoadCursorRef.current = cursor;
+      }
+      showError(t("skills.loadFailed"));
     } finally {
-      setLoading(false);
+      if (append || incremental) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [sortBy, t, toast, loadInstalledSkills]);
+  }, [sortBy, t, showError, loadInstalledSkills, mergeSkills]);
 
   useEffect(() => {
-    if (!searchMode) loadSkills();
+    if (!searchMode) {
+      setRequestedLimit(SKILLS_PAGE_SIZE);
+      setHasMoreSkills(true);
+      setNextCursor(null);
+      setSkills([]);
+      loadSkills({ limit: SKILLS_PAGE_SIZE });
+    }
   }, [sortBy, searchMode, loadSkills]);
 
+  const handleLoadMore = useCallback(() => {
+    if (searchMode || loading || loadingMore || !hasMoreSkills) {
+      return;
+    }
+
+    if (nextCursor && failedAutoLoadCursorRef.current === nextCursor) {
+      failedAutoLoadCursorRef.current = null;
+    }
+
+    if (nextCursor) {
+      loadSkills({ append: true, cursor: nextCursor });
+      return;
+    }
+
+    loadSkills({ limit: requestedLimit + SKILLS_PAGE_SIZE, incremental: true });
+  }, [searchMode, nextCursor, loading, loadingMore, hasMoreSkills, loadSkills, requestedLimit]);
+
   const handleSearch = async () => {
-    if (!searchQuery.trim()) { setSearchMode(false); return; }
+    if (!searchQuery.trim()) {
+      setSearchMode(false);
+      setSearchResults([]);
+      return;
+    }
     setLoading(true); setSearchMode(true);
     try {
       const response = await clawhubApi.search(searchQuery, 30);
       setSearchResults(response.results || []);
     } catch {
-      toast.showError(t("skills.searchFailed"));
+      showError(t("skills.searchFailed"));
     } finally {
       setLoading(false);
     }
@@ -105,7 +193,7 @@ export default memo(function SkillsMarket() {
       setSelectedSkill(detail);
     } catch (error) {
       console.error("Failed to load skill detail:", error);
-      toast.showError(t("skills.loadDetailFailed"));
+      showError(t("skills.loadDetailFailed"));
       setLoadingSkillSlug(null);
     } finally {
       setLoadingDetail(false);
@@ -119,7 +207,7 @@ export default memo(function SkillsMarket() {
       const content = await clawhubApi.getSkillFile(selectedSkill.skill.slug, path);
       setSkillFileContent(content);
     } catch {
-      toast.showError(t("skills.loadFileFailed"));
+      showError(t("skills.loadFileFailed"));
     } finally {
       setLoadingFile(false);
     }
@@ -131,8 +219,8 @@ export default memo(function SkillsMarket() {
 
   const copyInstallCommand = useCallback((slug: string) => {
     navigator.clipboard.writeText(getInstallCommand(slug));
-    toast.showSuccess(t("skills.commandCopied"));
-  }, [getInstallCommand, t, toast]);
+    showSuccess(t("skills.commandCopied"));
+  }, [getInstallCommand, t, showSuccess]);
 
   const handleInstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
@@ -140,18 +228,18 @@ export default memo(function SkillsMarket() {
     try {
       const result = await clawhubApi.installSkill(slug);
       if (result.success) {
-        toast.showSuccess(result.message);
+        showSuccess(result.message);
         // 只更新 Set，避免触发不必要的重新渲染
         setInstalledSkills(prev => new Set([...prev, slug]));
       } else {
-        toast.showError(result.message);
+        showError(result.message);
       }
     } catch (error) {
-      toast.showError(`${t("skills.installFailed")}: ${error}`);
+      showError(`${t("skills.installFailed")}: ${error}`);
     } finally {
       setInstallingSlug(null);
     }
-  }, [t, toast]);
+  }, [t, showError, showSuccess]);
 
   const handleUninstall = useCallback(async (skill: ClawHubSearchResult | SkillListItem) => {
     const slug = (skill as any).slug;
@@ -159,7 +247,7 @@ export default memo(function SkillsMarket() {
     try {
       const result = await clawhubApi.uninstallSkill(slug);
       if (result.success) {
-        toast.showSuccess(result.message);
+        showSuccess(result.message);
         // 只更新 Set，避免触发不必要的重新渲染
         setInstalledSkills(prev => {
           const newSet = new Set(prev);
@@ -167,19 +255,14 @@ export default memo(function SkillsMarket() {
           return newSet;
         });
       } else {
-        toast.showError(result.message);
+        showError(result.message);
       }
     } catch (error) {
-      toast.showError(`${t("skills.uninstallFailed")}: ${error}`);
+      showError(`${t("skills.uninstallFailed")}: ${error}`);
     } finally {
       setInstallingSlug(null);
     }
-  }, [t, toast]);
-
-  // 使用 useMemo 缓存分类列表
-  const categories = useMemo(() => 
-    Array.from(new Set(skills.map((s: any) => (s as any).category).filter(Boolean))) as string[],
-  [skills]);
+  }, [t, showError, showSuccess]);
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-dark-bg-base transition-colors duration-200">
@@ -189,7 +272,6 @@ export default memo(function SkillsMarket() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">{t("skills.title")}</h1>
-              <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-1">{t("skills.nodeRequired")}</p>
             </div>
             <a href="https://clawhub.ai" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
@@ -228,7 +310,7 @@ export default memo(function SkillsMarket() {
                   </button>
                 ))}
               </div>
-              <button onClick={loadSkills} disabled={loading} className="ml-auto p-2 text-gray-500 hover:text-gray-700" title={t("skills.refresh")}>
+              <button onClick={() => loadSkills()} disabled={loading} className="ml-auto p-2 text-gray-500 hover:text-gray-700" title={t("skills.refresh")}>
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </button>
             </div>
@@ -251,25 +333,54 @@ export default memo(function SkillsMarket() {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center h-64 text-gray-500 dark:text-dark-text-secondary">{t("skills.loading")}</div>
+            <LoadingState className="h-64" message={t("skills.loading")} />
           ) : searchMode ? (
             searchResults.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchResults.map((skill) => (
-                  <SkillCard key={skill.slug} skill={skill} isInstalled={installedSkills.has(skill.slug)} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
-                    onUninstall={handleUninstall} onViewDetails={(s) => viewSkillDetail(s)} />
+                  <SkillCard
+                    key={skill.slug}
+                    skill={skill}
+                    isInstalled={installedSkills.has(skill.slug)}
+                    isInstalling={installingSlug === skill.slug}
+                    onInstall={handleInstall}
+                    onUninstall={handleUninstall}
+                    onViewDetails={(item) => viewSkillDetail(item)}
+                  />
                 ))}
               </div>
             ) : (
               <EmptyState icon={Search} title={t("skills.noResults")} description={t("skills.noResultsDesc")} />
             )
           ) : skills.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {skills.map((skill) => (
-                <SkillCard key={skill.slug} skill={skill} isInstalled={installedSkills.has(skill.slug)} isInstalling={installingSlug === skill.slug} onInstall={handleInstall}
-                  onUninstall={handleUninstall} onViewDetails={(s) => viewSkillDetail(s)} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {skills.map((skill) => (
+                  <SkillCard
+                    key={skill.slug}
+                    skill={skill}
+                    isInstalled={installedSkills.has(skill.slug)}
+                    isInstalling={installingSlug === skill.slug}
+                    onInstall={handleInstall}
+                    onUninstall={handleUninstall}
+                    onViewDetails={(item) => viewSkillDetail(item)}
+                  />
+                ))}
+              </div>
+
+              <div className="flex min-h-16 justify-center py-6">
+                {loadingMore ? (
+                  <LoadingState compact message={t("skills.loading")} />
+                ) : hasMoreSkills ? (
+                  <button
+                    onClick={handleLoadMore}
+                    className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:border-blue-500/30 dark:bg-dark-bg-card dark:text-blue-400 dark:hover:bg-blue-500/10"
+                  >
+                    {t("skills.loadMore")}
+                  </button>
+                ) : null}
+              </div>
+            </>
           ) : (
             <EmptyState icon={Search} title={t("skills.noSkills")} description={t("skills.noSkillsDesc")} />
           )}
@@ -282,8 +393,7 @@ export default memo(function SkillsMarket() {
           <div className="bg-white dark:bg-dark-bg-card rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             {loadingDetail && !selectedSkill ? (
               <div className="p-4 flex flex-col items-center justify-center h-48 text-gray-500 dark:text-dark-text-secondary">
-                <RefreshCw className="w-8 h-8 animate-spin mb-3" />
-                <p className="text-sm">{t("skills.loadingDetail")}</p>
+                <LoadingState message={t("skills.loadingDetail")} />
                 <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">{loadingSkillSlug}</p>
               </div>
             ) : (
