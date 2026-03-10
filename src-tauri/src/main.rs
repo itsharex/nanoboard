@@ -36,26 +36,13 @@ async fn main() {
         .manage(std::sync::Mutex::new(network::NetworkMonitor::new()))
         .manage(theme::ThemeState::new())
         .setup(|app| {
-            // 设置窗口图标 (Windows 使用 ICO 格式)
-            #[cfg(target_os = "windows")]
+            // 复用 Tauri 已加载的默认窗口图标，避免依赖 image-ico/image-png 可选特性。
             if let Some(window) = app.get_webview_window("main") {
-                let icon_bytes = include_bytes!("../icons/icon.ico");
-                match tauri::image::Image::from_bytes(icon_bytes) {
-                    Ok(icon) => {
-                        let _ = window.set_icon(icon);
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to load window icon: {:?}", e);
-                    }
+                if let Some(icon) = app.default_window_icon().cloned() {
+                    let _ = window.set_icon(icon);
+                } else {
+                    log::warn!("Default window icon is not available");
                 }
-            }
-
-            // macOS/Linux 使用 PNG 格式
-            #[cfg(not(target_os = "windows"))]
-            if let Some(window) = app.get_webview_window("main") {
-                let icon_bytes = include_bytes!("../icons/32x32.png");
-                let icon = tauri::image::Image::new(icon_bytes, 32, 32);
-                let _ = window.set_icon(icon);
             }
 
             // 构建并设置应用菜单
