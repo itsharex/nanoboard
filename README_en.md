@@ -19,7 +19,7 @@ English | **[简体中文](README.md)**
 - **Cross-platform** - Whether you're on Windows, Mac, or Linux, nanoboard has you covered with seamless cross-platform support, ensuring a consistent experience across all your devices!
 - **Lightweight** - Built with Rust + Tauri, nanoboard offers excellent performance with minimal resource usage, embodying the nano philosophy in its design!
 
-
+<img src="public/screenshots/preview_en.png" alt="preview_en" style="border-radius: 15px; box-shadow: 0 0 30px rgba(0, 217, 255, 0.3); margin-top: 20px;" />
 
 ## Quick Start
 

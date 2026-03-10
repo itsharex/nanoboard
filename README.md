@@ -19,7 +19,7 @@
 - **通用化** - 无论你是 Windows、Mac 或 Linux，都能完美支持，真正做到无缝跨平台！
 - **轻量化** - Rust + Tauri 构建，性能优越并且资源占用极低，用 nano 的方式构建！
 
-
+<img src="public/screenshots/preview.png" alt="preview" style="border-radius: 15px; box-shadow: 0 0 30px rgba(0, 217, 255, 0.3); margin-top: 20px;" />
 
 ## 快速开始
 
