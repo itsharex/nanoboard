@@ -8,7 +8,6 @@ import {
   Cpu,
   FileText,
   Bot,
-  Download,
   Stethoscope,
   CheckCircle,
   AlertCircle,
@@ -302,7 +301,7 @@ export default function About() {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                  <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-lg">
                     <img 
                       src="/assets/logo.png" 
                       alt={APP_INFO.name}
@@ -311,7 +310,7 @@ export default function About() {
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
-                      <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <h1 className="text-2xl font-bold bg-gradient-to-r text-gray-900 dark:text-dark-text-primary">
                         {APP_INFO.name}
                       </h1>
                       <span className="px-2.5 py-1 bg-gray-100 dark:bg-dark-bg-sidebar text-gray-600 dark:text-dark-text-muted text-xs font-medium rounded-full">
@@ -365,44 +364,6 @@ export default function About() {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                {systemInfo && !systemInfo.nanobotVersion && (
-                  <>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const result = await processApi.downloadWithUv();
-                          if (result.status === "success") {
-                            await processApi.onboard();
-                            loadSystemInfo();
-                          }
-                        } catch (error) {
-                          console.error("Installation failed:", error);
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-md"
-                    >
-                      <Download className="w-4 h-4" />
-                      {t("dashboard.downloadWithUv")}
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const result = await processApi.download();
-                          if (result.status === "success") {
-                            await processApi.onboard();
-                            loadSystemInfo();
-                          }
-                        } catch (error) {
-                          console.error("Installation failed:", error);
-                        }
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors shadow-md"
-                    >
-                      <Download className="w-4 h-4" />
-                      {t("dashboard.downloadWithPip")}
-                    </button>
-                  </>
-                )}
                 <button
                   onClick={runDiagnosis}
                   disabled={diagnosing}

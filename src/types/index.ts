@@ -95,12 +95,6 @@ export interface DiagnosticResult {
   checks: any[];
 }
 
-export interface DownloadResult {
-  success: boolean;
-  message?: string;
-  status?: string;
-}
-
 export interface NanobotPath {
   path?: string;
   exists: boolean;
