@@ -1,6 +1,6 @@
 {
   "name": "nanoboard",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "An Ultra-lightweight nanobot Tauri Management Assistant",
   "author": "Freakz3z <3020517046@qq.com>",
   "license": "MIT",
