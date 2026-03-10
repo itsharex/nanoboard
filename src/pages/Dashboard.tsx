@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { processApi, networkApi } from "../lib/tauri";
+import { processApi, networkApi, cronApi, configApi } from "../lib/tauri";
 
 // 导入类型
 import type {
@@ -11,11 +11,15 @@ import type {
   NetworkData,
   DashboardConfig,
 } from "@/types/dashboard";
+import type { CronJob } from "@/types";
+import type { Config } from "@/types/config";
 
 // 导入组件
 import StatusCards from "@/components/dashboard/StatusCards";
 import ConfigOverviewCards from "@/components/dashboard/ConfigOverviewCards";
 import SystemResourceCards from "@/components/dashboard/SystemResourceCards";
+import CronOverviewCards from "@/components/dashboard/CronOverviewCards";
+import McpServersCard from "@/components/dashboard/McpServersCard";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -25,6 +29,8 @@ export default function Dashboard() {
   const [config, setConfig] = useState<DashboardConfig | null>(null);
   const [logStatistics, setLogStatistics] = useState<LogStatistics | null>(null);
   const [networkData, setNetworkData] = useState<NetworkData[]>([]);
+  const [cronJobs, setCronJobs] = useState<CronJob[] | null>(null);
+  const [mcpServers, setMcpServers] = useState<Record<string, any> | null>(null);
 
   // 使用合并 API 刷新所有状态
   async function refreshAll() {
@@ -76,10 +82,38 @@ export default function Dashboard() {
     }
   }
 
+  // 加载 Cron 任务
+  async function loadCronJobs() {
+    try {
+      const result = await cronApi.list();
+      if (result.success !== false) {
+        setCronJobs(result.jobs || []);
+      }
+    } catch (error) {
+      console.error("Failed to load cron jobs:", error);
+    }
+  }
+
+  // 加载 MCP Servers
+  async function loadMcpServers() {
+    try {
+      const fullConfig = await configApi.load() as Config;
+      if (fullConfig?.tools?.mcpServers) {
+        setMcpServers(fullConfig.tools.mcpServers);
+      } else {
+        setMcpServers({});
+      }
+    } catch (error) {
+      console.error("Failed to load MCP servers:", error);
+    }
+  }
+
   useEffect(() => {
     // 初始加载
     refreshAll();
     loadNanobotVersion();
+    loadCronJobs();
+    loadMcpServers();
 
     // 初始化网络监控
     networkApi.initMonitor().catch(console.error);
@@ -146,6 +180,12 @@ export default function Dashboard() {
           logStatistics={logStatistics}
           networkData={networkData}
         />
+
+        {/* Cron 任务概览和 MCP Servers */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CronOverviewCards cronJobs={cronJobs} />
+          <McpServersCard mcpServers={mcpServers} />
+        </div>
       </div>
     </div>
   );

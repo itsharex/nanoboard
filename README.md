@@ -19,50 +19,7 @@
 - **通用化** - 无论你是 Windows、Mac 或 Linux，都能完美支持，真正做到无缝跨平台！
 - **轻量化** - Rust + Tauri 构建，性能优越并且资源占用极低，用 nano 的方式构建！
 
-## 演示
 
-<div align="center">
-
-<table>
-  <tr>
-    <td align="center"><b>仪表盘</b></td>
-    <td align="center"><b>日志</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="public/screenshots/dashboard.png" alt="仪表盘" width="400"/></td>
-    <td align="center"><img src="public/screenshots/logs.png" alt="日志" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center">监控状态·系统资源</td>
-    <td align="center">实时查看·过滤日志</td>
-  </tr>
-  <tr>
-    <td align="center"><b>工作区</b></td>
-    <td align="center"><b>技能市场</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="public/screenshots/workspace.png" alt="工作区" width="400"/></td>
-    <td align="center"><img src="public/screenshots/skillsmarket.png" alt="技能市场" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center">文件·技能·记忆·会话·定时</td>
-    <td align="center">ClawHub 技能·一键安装</td>
-  </tr>
-  <tr>
-    <td align="center"><b>设置</b></td>
-    <td align="center"><b>关于</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="public/screenshots/settings.png" alt="设置" width="400"/></td>
-    <td align="center"><img src="public/screenshots/about.png" alt="关于" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center">可视化配置·快速编辑</td>
-    <td align="center">版本信息·系统详情</td>
-  </tr>
-</table>
-
-</div>
 
 ## 快速开始
 

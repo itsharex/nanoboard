@@ -19,50 +19,7 @@ English | **[简体中文](README.md)**
 - **Cross-platform** - Whether you're on Windows, Mac, or Linux, nanoboard has you covered with seamless cross-platform support, ensuring a consistent experience across all your devices!
 - **Lightweight** - Built with Rust + Tauri, nanoboard offers excellent performance with minimal resource usage, embodying the nano philosophy in its design!
 
-## Screenshots
 
-<div align="center">
-
-<table>
-  <tr>
-    <td align="center"><b>Dashboard</b></td>
-    <td align="center"><b>Logs</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="public/screenshots/dashboard.png" alt="Dashboard" width="400"/></td>
-    <td align="center"><img src="public/screenshots/logs.png" alt="Logs" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center">Status Monitoring·System Resources</td>
-    <td align="center">Real-time Viewing·Log Filtering</td>
-  </tr>
-  <tr>
-    <td align="center"><b>Workspace</b></td>
-    <td align="center"><b>Skills Market</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="public/screenshots/workspace.png" alt="Workspace" width="400"/></td>
-    <td align="center"><img src="public/screenshots/skillsmarket.png" alt="Skills Market" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center">File·Skills·Memory·Sessions·Cron</td>
-    <td align="center">ClawHub Skills·One-Click Install</td>
-  </tr>
-  <tr>
-    <td align="center"><b>Settings</b></td>
-    <td align="center"><b>About</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="public/screenshots/settings.png" alt="Settings" width="400"/></td>
-    <td align="center"><img src="public/screenshots/about.png" alt="About" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center">Visual Config·Quick Edit</td>
-    <td align="center">Version Info·System Details</td>
-  </tr>
-</table>
-
-</div>
 
 ## Quick Start
 
