@@ -177,70 +177,6 @@ export default function Layout({ children }: LayoutProps) {
         <aside
           className={`${collapsed ? "w-16" : "w-56"} bg-gray-50 dark:bg-dark-bg-sidebar border-r border-gray-200 dark:border-dark-border-default flex flex-col transition-all duration-300 ease-in-out`}
         >
-          {/* Logo 区域 */}
-          <div className={`border-b border-gray-200 dark:border-dark-border-subtle ${collapsed ? "p-3" : "p-6"}`}>
-            <div className={`flex flex-col items-center ${collapsed ? "gap-0" : "gap-3"}`}>
-              {/* Logo 统一浅灰色背景 */}
-              <div className={`${collapsed ? "p-2" : "p-3"} bg-gradient-to-br from-gray-50 to-gray-100 ${collapsed ? "rounded-xl" : "rounded-2xl"} shadow-sm transition-all duration-200`}>
-                <img
-                  src="/assets/logo.png"
-                  alt={t("layout.logoAlt")}
-                  className={`${collapsed ? "w-9 h-9" : "w-12 h-12"} rounded-lg object-contain transition-all duration-200`}
-                />
-              </div>
-              {!collapsed && (
-                <>
-                  <h1 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
-                    {t("app.name")}
-                  </h1>
-                  {/* 语言和主题切换 */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        const newLang = i18n.language === 'zh-CN' ? 'en-US' : 'zh-CN';
-                        i18n.changeLanguage(newLang);
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all text-xs font-medium"
-                      title={t("language.switch")}
-                    >
-                      <Languages className="w-3 h-3" />
-                      <span>{i18n.language === 'zh-CN' ? '中文' : 'EN'}</span>
-                    </button>
-                    <button
-                      onClick={toggleTheme}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all text-xs font-medium"
-                      title={theme === 'dark' ? t("language.lightMode") : t("language.darkMode")}
-                    >
-                      {theme === 'dark' ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
-                      <span>{i18n.language === 'zh-CN' ? (theme === 'dark' ? '浅色' : '深色') : (theme === 'dark' ? 'Light' : 'Dark')}</span>
-                    </button>
-                  </div>
-                </>
-              )}
-              {collapsed && (
-                <div className="flex flex-col items-center gap-2 mt-2">
-                  <button
-                    onClick={() => {
-                      const newLang = i18n.language === 'zh-CN' ? 'en-US' : 'zh-CN';
-                      i18n.changeLanguage(newLang);
-                    }}
-                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all"
-                    title={t("language.switch")}
-                  >
-                    <Languages className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={toggleTheme}
-                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all"
-                    title={theme === 'dark' ? t("language.lightMode") : t("language.darkMode")}
-                  >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* 导航菜单 */}
           <nav className={`flex-1 ${collapsed ? "p-2" : "p-4"} space-y-1`}>
             {navItems.map((item) => (
@@ -293,6 +229,52 @@ export default function Layout({ children }: LayoutProps) {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               {!collapsed && <span>{t("layout.restart")}</span>}
             </button>
+
+            {/* 语言和主题切换按钮 */}
+            {!collapsed && (
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-dark-border-subtle">
+                <button
+                  onClick={() => {
+                    const newLang = i18n.language === 'zh-CN' ? 'en-US' : 'zh-CN';
+                    i18n.changeLanguage(newLang);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all text-xs font-medium"
+                  title={t("language.switch")}
+                >
+                  <Languages className="w-3.5 h-3.5" />
+                  <span>{i18n.language === 'zh-CN' ? '中文' : 'EN'}</span>
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all text-xs font-medium"
+                  title={theme === 'dark' ? t("language.lightMode") : t("language.darkMode")}
+                >
+                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  <span>{i18n.language === 'zh-CN' ? (theme === 'dark' ? '浅色' : '深色') : (theme === 'dark' ? 'Light' : 'Dark')}</span>
+                </button>
+              </div>
+            )}
+            {collapsed && (
+              <div className="flex flex-col items-center gap-2 pt-2 border-t border-gray-200 dark:border-dark-border-subtle">
+                <button
+                  onClick={() => {
+                    const newLang = i18n.language === 'zh-CN' ? 'en-US' : 'zh-CN';
+                    i18n.changeLanguage(newLang);
+                  }}
+                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all"
+                  title={t("language.switch")}
+                >
+                  <Languages className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-dark-bg-hover dark:hover:bg-dark-bg-active text-gray-600 dark:text-dark-text-primary transition-all"
+                  title={theme === 'dark' ? t("language.lightMode") : t("language.darkMode")}
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 折叠/展开按钮 */}

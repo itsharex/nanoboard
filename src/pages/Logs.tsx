@@ -422,7 +422,7 @@ export default function Logs() {
         <EmptyState
           icon={Inbox}
           title={searchQuery ? t("logs.noMatchingLogs") : t("logs.noLogs")}
-          description={searchQuery ? t("logs.tryDifferentKeywords") : t("logs.startNanobotForLogs")}
+          description={searchQuery ? t("logs.tryDifferentKeywords") : t("logs.startnanobotForLogs")}
         />
       ) : (
         <div className="flex-1 overflow-hidden">

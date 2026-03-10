@@ -33,7 +33,7 @@ function AppContent() {
     });
     unlisteners.push(() => unlistenTheme.then(fn => fn()));
 
-    // 监听启动 Nanobot 事件
+    // 监听启动 nanobot 事件
     const unlistenStart = listen("menu-start-nanobot", async () => {
       try {
         await processApi.start();
@@ -43,7 +43,7 @@ function AppContent() {
     });
     unlisteners.push(() => unlistenStart.then(fn => fn()));
 
-    // 监听停止 Nanobot 事件
+    // 监听停止 nanobot 事件
     const unlistenStop = listen("menu-stop-nanobot", async () => {
       try {
         await processApi.stop();

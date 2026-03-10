@@ -387,7 +387,7 @@ export default function About() {
 
             {/* 系统基本信息 */}
             {systemInfo && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-3 gap-3 mb-8">
                 <InfoCard
                   icon={Monitor}
                   label={t("about.os")}
@@ -406,13 +406,6 @@ export default function About() {
                   value={systemInfo.nanobotVersion || t("dashboard.notInstalled")}
                   status={systemInfo.nanobotVersion ? "ok" : "warning"}
                   color="green"
-                />
-                <InfoCard
-                  icon={Terminal}
-                  label={t("about.pythonVersion")}
-                  value={systemInfo.pythonVersion || t("dashboard.notDetected")}
-                  status={systemInfo.pythonVersion ? "ok" : "warning"}
-                  color="amber"
                 />
               </div>
             )}
@@ -540,7 +533,7 @@ export default function About() {
                     </div>
                   </div>
 
-                  {/* Nanobot 路径 */}
+                  {/* nanobot 路径 */}
                   <div>
                     <label className={`flex items-center gap-1.5 text-sm font-semibold mb-2 ${
                       hasCustomPaths && customPaths.nanobotPath ? "text-indigo-800 dark:text-indigo-300" : "text-gray-600 dark:text-dark-text-secondary"
