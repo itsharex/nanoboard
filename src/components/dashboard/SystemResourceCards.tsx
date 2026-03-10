@@ -19,17 +19,17 @@ export default function SystemResourceCards({ systemInfo, logStatistics, network
   if (!systemInfo) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {/* 性能监控 */}
-      <div className="p-5 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="w-5 h-5 text-indigo-500" />
-          <span className="text-base font-medium text-gray-700 dark:text-dark-text-primary">{t("dashboard.performanceMonitoring")}</span>
+      <div className="p-4 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
+        <div className="flex items-center gap-2 mb-3">
+          <Activity className="w-4.5 h-4.5 text-indigo-500" />
+          <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary">{t("dashboard.performanceMonitoring")}</span>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* CPU */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-blue-500" />
                 <span className="text-sm text-gray-600 dark:text-dark-text-secondary">{t("dashboard.cpu")}</span>
@@ -45,7 +45,7 @@ export default function SystemResourceCards({ systemInfo, logStatistics, network
           </div>
           {/* 内存 */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2">
                 <HardDrive className="w-4 h-4 text-green-500" />
                 <span className="text-sm text-gray-600 dark:text-dark-text-secondary">{t("dashboard.memory")}</span>
@@ -58,13 +58,13 @@ export default function SystemResourceCards({ systemInfo, logStatistics, network
                 style={{ width: `${Math.min(systemInfo.memory.usage_percent, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">
+            <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-0.5">
               {systemInfo.memory.used_text} / {systemInfo.memory.total_text}
             </p>
           </div>
           {/* 交换空间 */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-purple-500" />
                 <span className="text-sm text-gray-600 dark:text-dark-text-secondary">{t("dashboard.swap")}</span>
@@ -77,7 +77,7 @@ export default function SystemResourceCards({ systemInfo, logStatistics, network
                 style={{ width: `${Math.min(systemInfo.swap.usage_percent, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">
+            <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-0.5">
               {systemInfo.swap.used_text} / {systemInfo.swap.total_text}
             </p>
           </div>
@@ -86,10 +86,10 @@ export default function SystemResourceCards({ systemInfo, logStatistics, network
 
       {/* 网络监控折线图 */}
       <div className="bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle overflow-hidden transition-colors duration-200">
-        <div className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-5 h-5 text-cyan-500" />
-            <span className="text-base font-medium text-gray-700 dark:text-dark-text-primary">{t("dashboard.networkMonitoring")}</span>
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-2.5">
+            <TrendingUp className="w-4.5 h-4.5 text-cyan-500" />
+            <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary">{t("dashboard.networkMonitoring")}</span>
           </div>
           <NetworkMonitor data={networkData} />
         </div>
@@ -97,17 +97,17 @@ export default function SystemResourceCards({ systemInfo, logStatistics, network
 
       {/* 日志监控 */}
       {logStatistics && (
-        <div className="p-5 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-4 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
+          <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-amber-500" />
-              <span className="text-base font-medium text-gray-700 dark:text-dark-text-primary">{t("dashboard.logStatistics")}</span>
+              <FileText className="w-4.5 h-4.5 text-amber-500" />
+              <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary">{t("dashboard.logStatistics")}</span>
             </div>
-            <span className="text-sm text-gray-500 dark:text-dark-text-muted">
+            <span className="text-xs text-gray-500 dark:text-dark-text-muted whitespace-nowrap">
               {logStatistics.total} {t("dashboard.entries")}
             </span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* DEBUG */}
             <LogProgressBar
               label="DEBUG"
@@ -164,7 +164,7 @@ function LogProgressBar({
 
   return (
     <div>
-      <div className="flex items-center justify-between text-sm mb-1">
+      <div className="flex items-center justify-between text-xs mb-1">
         <span className={labelColorClass}>{label}</span>
         <span className="text-gray-600 dark:text-dark-text-secondary font-medium">
           {count} ({percentage}%)

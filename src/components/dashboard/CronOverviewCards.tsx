@@ -23,13 +23,13 @@ export default function CronOverviewCards({ cronJobs }: CronOverviewCardsProps) 
   const upcomingJobs = cronJobs
     .filter((job) => job.enabled && job.state?.nextRunAtMs)
     .sort((a, b) => (a.state?.nextRunAtMs || 0) - (b.state?.nextRunAtMs || 0))
-    .slice(0, 3);
+    .slice(0, 2);
 
   // 获取最近执行的任务（按 lastRunAtMs 排序，取最近3个）
   const recentJobs = cronJobs
     .filter((job) => job.state?.lastRunAtMs)
     .sort((a, b) => (b.state?.lastRunAtMs || 0) - (a.state?.lastRunAtMs || 0))
-    .slice(0, 3);
+    .slice(0, 2);
 
   const formatTime = (timestamp: number | undefined) => {
     if (!timestamp) return "-";
@@ -43,15 +43,15 @@ export default function CronOverviewCards({ cronJobs }: CronOverviewCardsProps) 
   };
 
   return (
-    <div className="p-5 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-4 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
+      <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-cyan-500" />
-          <span className="text-base font-medium text-gray-700 dark:text-dark-text-primary">
+          <Clock className="w-4.5 h-4.5 text-cyan-500" />
+          <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary">
             {t("dashboard.cronOverview")}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-dark-text-muted">
             <CheckCircle className="w-3.5 h-3.5 text-green-500" />
             {enabledJobs}
@@ -71,18 +71,18 @@ export default function CronOverviewCards({ cronJobs }: CronOverviewCardsProps) 
           {t("dashboard.noCronJobs")}
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* 即将执行的任务 */}
           {upcomingJobs.length > 0 && (
             <div>
-              <h4 className="text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-2">
+              <h4 className="text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-1.5">
                 {t("dashboard.upcomingExecutions")}
               </h4>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {upcomingJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg"
+                    className="flex items-center justify-between gap-2 p-2 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg"
                   >
                     <div className="flex items-center gap-2">
                       <Clock className="w-3.5 h-3.5 text-cyan-500" />
@@ -102,14 +102,14 @@ export default function CronOverviewCards({ cronJobs }: CronOverviewCardsProps) 
           {/* 最近执行的任务 */}
           {recentJobs.length > 0 && (
             <div>
-              <h4 className="text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-2">
+              <h4 className="text-xs font-medium text-gray-500 dark:text-dark-text-muted mb-1.5">
                 {t("dashboard.recentExecutions")}
               </h4>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {recentJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg"
+                    className="flex items-center justify-between gap-2 p-2 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg"
                   >
                     <div className="flex items-center gap-2">
                       {job.state?.lastStatus === "success" ? (

@@ -15,10 +15,10 @@ export default function McpServersCard({ mcpServers }: McpServersCardProps) {
 
   if (!mcpServers || Object.keys(mcpServers).length === 0) {
     return (
-      <div className="p-5 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
-        <div className="flex items-center gap-2 mb-3">
-          <Server className="w-5 h-5 text-indigo-500" />
-          <span className="text-base font-medium text-gray-700 dark:text-dark-text-primary">
+      <div className="p-4 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
+        <div className="flex items-center gap-2 mb-2.5">
+          <Server className="w-4.5 h-4.5 text-indigo-500" />
+          <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary">
             {t("dashboard.mcpServers")}
           </span>
         </div>
@@ -40,11 +40,11 @@ export default function McpServersCard({ mcpServers }: McpServersCardProps) {
   };
 
   return (
-    <div className="p-5 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-4 bg-white dark:bg-dark-bg-card rounded-xl border border-gray-200 dark:border-dark-border-subtle transition-colors duration-200">
+      <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <Server className="w-5 h-5 text-indigo-500" />
-          <span className="text-base font-medium text-gray-700 dark:text-dark-text-primary">
+          <Server className="w-4.5 h-4.5 text-indigo-500" />
+          <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary">
             {t("dashboard.mcpServers")}
           </span>
         </div>
@@ -53,13 +53,13 @@ export default function McpServersCard({ mcpServers }: McpServersCardProps) {
         </span>
       </div>
 
-      <div className="space-y-2 max-h-[180px] overflow-y-auto scrollbar-thin">
-        {servers.slice(0, 5).map(([name, server]) => {
+      <div className="space-y-1.5 max-h-[148px] overflow-y-auto scrollbar-thin">
+        {servers.slice(0, 4).map(([name, server]) => {
           const serverType = getServerType(server);
           return (
             <div
               key={name}
-              className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg hover:bg-gray-100 dark:hover:bg-dark-bg-hover transition-colors"
+              className="flex items-center justify-between gap-2 p-2 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg hover:bg-gray-100 dark:hover:bg-dark-bg-hover transition-colors"
             >
               <div className="flex items-center gap-2">
                 {serverType === "http" ? (
@@ -80,9 +80,9 @@ export default function McpServersCard({ mcpServers }: McpServersCardProps) {
             </div>
           );
         })}
-        {servers.length > 5 && (
+        {servers.length > 4 && (
           <p className="text-xs text-gray-400 dark:text-dark-text-muted text-center pt-1">
-            +{servers.length - 5} {t("dashboard.more")}
+            +{servers.length - 4} {t("dashboard.more")}
           </p>
         )}
       </div>

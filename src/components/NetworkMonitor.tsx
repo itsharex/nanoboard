@@ -15,7 +15,7 @@ interface NetworkMonitorProps {
 export default memo(function NetworkMonitor({ data = [] }: NetworkMonitorProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 300, height: 128 });
+  const [dimensions, setDimensions] = useState({ width: 300, height: 104 });
   
   // EMA 平滑状态
   const emaRef = useRef({ upload: 0, download: 0 });
@@ -93,16 +93,16 @@ export default memo(function NetworkMonitor({ data = [] }: NetworkMonitorProps) 
   return (
     <div className="w-full h-full flex flex-col">
       {/* 标题和当前值 */}
-      <div className="flex flex-col gap-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 mb-2.5">
         <div className="flex items-center gap-1.5">
-          <TrendingUp className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+          <TrendingUp className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
           <div className="text-xs">
             <span className="text-gray-500 dark:text-dark-text-muted">{t("dashboard.upload")}: </span>
             <span className="font-medium text-gray-700 dark:text-dark-text-secondary">{formatSpeed(currentUpload)}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <TrendingDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <TrendingDown className="w-3 h-3 text-blue-600 dark:text-blue-400" />
           <div className="text-xs">
             <span className="text-gray-500 dark:text-dark-text-muted">{t("dashboard.download")}: </span>
             <span className="font-medium text-gray-700 dark:text-dark-text-secondary">{formatSpeed(currentDownload)}</span>
@@ -111,7 +111,7 @@ export default memo(function NetworkMonitor({ data = [] }: NetworkMonitorProps) 
       </div>
 
       {/* 折线图 */}
-      <div className="flex-1 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg border border-gray-200 dark:border-dark-border-subtle relative overflow-hidden transition-colors duration-200">
+      <div className="h-28 bg-gray-50 dark:bg-dark-bg-sidebar rounded-lg border border-gray-200 dark:border-dark-border-subtle relative overflow-hidden transition-colors duration-200">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}

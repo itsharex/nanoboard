@@ -166,8 +166,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 scrollbar-thin bg-white dark:bg-dark-bg-base transition-colors duration-200">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-5 scrollbar-thin bg-white dark:bg-dark-bg-base transition-colors duration-200">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* 状态卡片 */}
         <StatusCards status={status} nanobotVersion={nanobotVersion} />
 
@@ -182,7 +182,7 @@ export default function Dashboard() {
         />
 
         {/* Cron 任务概览和 MCP Servers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <CronOverviewCards cronJobs={cronJobs} />
           <McpServersCard mcpServers={mcpServers} />
         </div>
