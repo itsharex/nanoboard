@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Folder, File, Clock, Trash2, Edit2, Search, HardDrive } from "lucide-react";
+import { Folder, File, Clock, Trash2, Search, HardDrive } from "lucide-react";
 import EmptyState from "../EmptyState";
 
 interface FsItem {
@@ -19,7 +19,6 @@ interface FileListProps {
   onSearchChange: (query: string) => void;
   onDirectoryLoad: (path: string) => void;
   onFileLoad: (item: FsItem) => void;
-  onRename: (item: FsItem) => void;
   onDelete: (item: FsItem) => void;
   formatSize: (bytes: number) => string;
   formatTimestamp: (timestamp: number, t: any, i18n: any) => string;
@@ -33,7 +32,6 @@ export default function FileList({
   onSearchChange,
   onDirectoryLoad,
   onFileLoad,
-  onRename,
   onDelete,
   formatSize,
   formatTimestamp,
@@ -94,13 +92,6 @@ export default function FileList({
               </div>
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={(e) => { e.stopPropagation(); onRename(item); }}
-                className="p-1.5 text-gray-400 dark:text-dark-text-muted hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-all"
-                title={t("workspace.rename")}
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(item); }}
                 className="p-1.5 text-gray-400 dark:text-dark-text-muted hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-all"

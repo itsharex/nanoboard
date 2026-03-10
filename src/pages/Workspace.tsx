@@ -494,8 +494,8 @@ export default function Workspace() {
           <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1 scrollbar-thin">
             {activeTab === "files" && (
               <FileList items={items} selectedItem={selectedItem} searchQuery={fileSearchQuery} isLoading={isLoading}
-                onSearchChange={setFileSearchQuery} onDirectoryLoad={loadDirectory} onFileLoad={loadFileContentAction}
-                onRename={renameFsItem} onDelete={deleteFsItem} formatSize={formatSize}
+                onSearchChange={setFileSearchQuery} onDirectoryLoad={loadDirectory} onFileLoad={loadFileContentAction
+                } onDelete={deleteFsItem} formatSize={formatSize}
                 formatTimestamp={(ts) => formatTimestamp(ts, t, i18n)} />
             )}
             {activeTab === "skills" && (
@@ -524,7 +524,7 @@ export default function Workspace() {
         <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-dark-bg-sidebar transition-colors duration-200">
           {/* 这里保留原有的详情渲染逻辑，因为主要是条件渲染，不涉及复杂列表 */}
           {activeTab === "files" && selectedItem ? (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="bg-white dark:bg-dark-bg-card border-b border-gray-200 dark:border-dark-border-subtle px-6 py-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -539,9 +539,9 @@ export default function Workspace() {
                   </button>
                 </div>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto p-6 scrollbar-thin">
-                <div className="bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle p-6">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-dark-text-secondary font-mono leading-relaxed">{fileContent}</pre>
+              <div className="flex-1 min-h-0 p-6">
+                <div className="h-full overflow-y-auto bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle p-6 scrollbar-thin">
+                  <div className="text-sm text-gray-800 dark:text-dark-text-secondary font-mono leading-relaxed whitespace-pre-wrap break-words">{fileContent}</div>
                 </div>
               </div>
             </div>
@@ -579,19 +579,19 @@ export default function Workspace() {
                   </div>
                 </div>
               </div>
-              {isEditing ? (
-                <textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)}
-                  className="flex-1 w-full p-4 font-mono text-sm bg-white dark:bg-dark-bg-card text-gray-900 dark:text-dark-text-primary resize-none focus:outline-none scrollbar-thin border-0"
-                  placeholder={t("workspace.editorPlaceholder")} />
-              ) : (
-                <div className="flex-1 min-h-0 overflow-y-auto p-6 scrollbar-thin">
-                  <div className="bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle p-6">
-                    <div className="prose dark:prose-invert max-w-none break-words overflow-auto">
+              <div className="flex-1 min-h-0 p-6">
+                {isEditing ? (
+                  <textarea value={editingContent} onChange={(e) => setEditingContent(e.target.value)}
+                    className="w-full h-full p-4 font-mono text-sm bg-white dark:bg-dark-bg-card text-gray-900 dark:text-dark-text-primary border border-gray-200 dark:border-dark-border-subtle rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 scrollbar-thin"
+                    placeholder={t("workspace.editorPlaceholder")} />
+                ) : (
+                  <div className="h-full overflow-y-auto bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle p-6 scrollbar-thin">
+                    <div className="prose dark:prose-invert max-w-none break-words">
                       <ReactMarkdown>{skillFrontmatter.body || skillContent || t("workspace.noContent")}</ReactMarkdown>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : activeTab === "memory" && selectedMemory ? (
             <div className="flex-1 flex flex-col min-h-0">
@@ -629,7 +629,7 @@ export default function Workspace() {
                     placeholder={t("workspace.memoryEditorPlaceholder")} />
                 ) : (
                   <div className="h-full overflow-y-auto bg-white dark:bg-dark-bg-card rounded-lg border border-gray-200 dark:border-dark-border-subtle p-6 scrollbar-thin">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-dark-text-secondary font-mono leading-relaxed">{memoryContent || t("workspace.noMemoryContent")}</pre>
+                    <div className="text-sm text-gray-800 dark:text-dark-text-secondary font-mono leading-relaxed whitespace-pre-wrap break-words">{memoryContent || t("workspace.noMemoryContent")}</div>
                   </div>
                 )}
               </div>
